@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Okulumuz OS V9</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --p: #2563eb; --bg: #f3f4f6; --t: #1f2937; --card: #ffffff; }
+        .theme-dark { --p: #60a5fa; --bg: #0f172a; --t: #f1f5f9; --card: #1e293b; }
+        .theme-green { --p: #10b981; --bg: #f0fdf4; --t: #064e3b; --card: #ffffff; }
+        .theme-red { --p: #ef4444; --bg: #fef2f2; --t: #7f1d1d; --card: #ffffff; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; transition: 0.3s; }
+        body { background: var(--bg); color: var(--t); height: 100vh; overflow: hidden; }
+        
+        .screen { display: none; height: 100vh; padding: 20px; flex-direction: column; position: absolute; width: 100%; top:0; background: var(--bg); }
+        .screen.active { display: flex; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.05); }
+        
+        .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--p); color: white; font-weight: bold; cursor: pointer; margin: 5px 0; }
+        .btn-sm { width: auto; padding: 5px 10px; font-size: 11px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 10px; outline: none; background: var(--card); color: var(--t); }
+        
+        .navbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: var(--card); border-top: 1px solid #ddd; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-item { text-align: center; opacity: 0.5; flex: 1; cursor: pointer; font-size: 11px; }
+        .nav-item.active { opacity: 1; color: var(--p); font-weight: bold; }
+        
+        .scroll { flex: 1; overflow-y: auto; padding-bottom: 80px; max-width: 500px; margin: 0 auto; width: 100%; }
+        
+        /* Forum Özel */
+        .forum-msg { display: flex; flex-direction: column; align-items: flex-start; }
+        .u-stars { color: #f59e0b; font-size: 10px; line-height: 1; }
+        .u-name { font-weight: bold; font-size: 15px; margin: 2px 0; }
+        .u-rank { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2px 0; }
+        .reply-box { margin-top: 10px; padding-left: 10px; border-left: 3px solid #ddd; font-size: 13px; color: #666; width: 100%; }
+
+        .admin-layer { position: fixed; inset: 0; background: var(--bg); z-index: 2000; padding: 20px; display: none; flex-direction: column; overflow-y: auto; }
+        .admin-layer.active { display: flex; }
+        
+        #ban-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); color: white; z-index: 9999; display: none; align-items: center; justify-content: center; text-align: center; padding: 40px; }
+    </style>
+</head>
+<body class="theme-blue">
+
+<div id="ban-overlay"><div><h1>🚫 CEZALISIN</h1><p id="ban-msg"></p><br><button class="btn" onclick="location.reload()">Tekrar Dene</button></div></div>
+
+<div class="screen active" id="scr-land">
+    <div style="text-align:center; margin-top:100px;"><h1>Okulumuz OS</h1><p>Versiyon 9.0</p></div>
+    <div style="margin-top:auto; padding-bottom:50px;">
+        <button class="btn" onclick="nav('scr-reg')">Kaydol</button>
+        <button class="btn" style="background:none; color:var(--p); border:1px solid var(--p);" onclick="nav('scr-log')">Giriş Yap</button>
+    </div>
+</div>
+
+<div class="screen" id="scr-reg">
+    <h3>Yeni Kayıt</h3>
+    <input type="text" id="r-user" placeholder="Kullanıcı Adı">
+    <input type="password" id="r-pass" placeholder="Şifre">
+    <button class="btn" onclick="doRegister()">Hesap Oluştur</button>
+    <button class="btn" style="background:#666" onclick="nav('scr-land')">Geri</button>
+</div>
+
+<div class="screen" id="scr-log">
+    <h3>Giriş Yap</h3>
+    <input type="text" id="l-user" placeholder="Kullanıcı Adı">
+    <input type="password" id="l-pass" placeholder="Şifre">
+    <button class="btn" onclick="doLogin()">Giriş</button>
+</div>
+
+<div class="screen" id="scr-app">
+    <div class="scroll">
+        <div id="v-home">
+            <div class="card" style="text-align:center;">
+                <h2 id="p-name">---</h2>
+                <span id="p-badge" class="badge">---</span>
+                <p id="p-info" style="font-size:12px; margin-top:5px;"></p>
+                <div onclick="checkAdmin()" style="height:20px; opacity:0; cursor:pointer;">ADM</div>
+            </div>
+            <h4>📌 Ödevler</h4>
+            <div id="hw-list"></div>
+        </div>
+
+        <div id="v-forum" style="display:none;">
+            <div class="card"><textarea id="f-in" placeholder="Okula bir şeyler yaz..."></textarea><button class="btn" onclick="sendF()">Paylaş</button></div>
+            <div id="f-list"></div>
+        </div>
+
+        <div id="v-msg" style="display:none;">
+            <div class="card"><input type="text" id="m-to" placeholder="Kullanıcı adı"><textarea id="m-in" placeholder="Mesaj..."></textarea><button class="btn" onclick="sendM()">Özel Mesaj Gönder</button></div>
+            <div id="m-list"></div>
+        </div>
+
+        <div id="v-set" style="display:none;">
+            <h3>Ayarlar</h3><br>
+            <div class="card">
+                <h4>Tema Değiştir</h4>
+                <select onchange="changeTheme(this.value)">
+                    <option value="theme-blue">Standart Mavi</option>
+                    <option value="theme-dark">Karanlık Mod</option>
+                    <option value="theme-green">Yeşil Doğa</option>
+                    <option value="theme-red">Kritik Kırmızı</option>
+                </select>
+            </div>
+            <div class="card">
+                <h4>Hesap Bilgileri</h4>
+                <input type="email" id="s-mail" placeholder="E-posta Adresi">
+                <input type="password" id="s-pass" placeholder="Yeni Şifre">
+                <button class="btn" onclick="updateAcc()">Bilgileri Güncelle</button>
+            </div>
+        </div>
+    </div>
+    <nav class="navbar">
+        <div class="nav-item" onclick="setV('msg')">💬 Mesaj</div>
+        <div class="nav-item" onclick="setV('forum')">🌐 Forum</div>
+        <div class="nav-item active" onclick="setV('home')">🏠 Ev</div>
+        <div class="nav-item" onclick="setV('set')">⚙️ Ayarlar</div>
+    </nav>
+</div>
+
+<div class="admin-layer" id="gui-adm">
+    <h2>Yönetim Üssü</h2><br>
+    <div class="card">
+        <h4>Ödev/Duyuru</h4>
+        <input type="text" id="adm-t" placeholder="Başlık"><textarea id="adm-d" placeholder="İçerik"></textarea>
+        <button class="btn" onclick="addHw()">Yayınla</button>
+    </div>
+    <div class="card">
+        <h4>Kullanıcı Yönetimi (Ban/Yetki)</h4>
+        <div id="adm-u-list" style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:5px;"></div>
+    </div>
+    <button class="btn btn-danger" onclick="nuke()">YILI SIFIRLA (NÜKLEER)</button>
+    <button class="btn" style="background:#666" onclick="document.getElementById('gui-adm').classList.remove('active')">Kapat</button>
+</div>
+
+<script>
+    const config = {
+        apiKey: "AIzaSyBduE1m-WMXuCJyWSu3IqZT_da1CbYvTV8",
+        authDomain: "okulumuz-ea041.firebaseapp.com",
+        databaseURL: "https://okulumuz-ea041-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "okulumuz-ea041",
+        storageBucket: "okulumuz-ea041.appspot.com",
+        messagingSenderId: "341438740966",
+        appId: "1:341438740966:web:f442348eea4239619afe27"
+    };
+    firebase.initializeApp(config);
+    const db = firebase.database();
+    let me = null;
+    let replyTo = null;
+
+    function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function setV(v) { 
+        ["home","forum","msg","set"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
+        document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+
+    function doRegister() {
+        const u = document.getElementById('r-user').value.trim().toLowerCase();
+        const p = document.getElementById('r-pass').value;
+        if(!u || !p) return alert("Boş bırakma!");
+        db.ref('users/'+u).set({ name:u, pass:p, rank:"Öğrenci", rankColor:"#666", stars:0, banUntil:0 });
+        alert("Kayıt ok! Giriş yap."); nav('scr-log');
+    }
+
+    function doLogin() {
+        const u = document.getElementById('l-user').value.trim().toLowerCase();
+        const p = document.getElementById('l-pass').value;
+        db.ref('users/'+u).on('value', snap => {
+            const d = snap.val();
+            if(d && d.pass === p) {
+                if(d.banUntil > Date.now()) {
+                    document.getElementById('ban-overlay').style.display = "flex";
+                    document.getElementById('ban-msg').innerText = new Date(d.banUntil).toLocaleString() + " tarihine kadar men edildin.";
+                    return;
+                }
+                me = d;
+                document.getElementById('p-name').innerText = u.toUpperCase();
+                document.getElementById('p-badge').innerText = d.rank;
+                document.getElementById('s-mail').value = d.email || "";
+                nav('scr-app'); sync();
+            } else alert("Hata!");
+        });
+    }
+
+    function sync() {
+        db.ref('homework').on('value', s => {
+            const l = document.getElementById('hw-list'); l.innerHTML = "";
+            s.forEach(c => { l.innerHTML += `<div class="card"><b>${c.val().t}</b><p>${c.val().d}</p></div>`; });
+        });
+
+        db.ref('forum').on('value', s => {
+            const l = document.getElementById('f-list'); l.innerHTML = "";
+            s.forEach(c => {
+                const d = c.val();
+                let replyHtml = d.reply ? `<div class="reply-box"><b>Yanıtlanan:</b> ${d.reply}</div>` : '';
+                l.innerHTML = `<div class="card forum-msg">
+                    <div class="u-stars">${"★".repeat(d.stars || 0)}</div>
+                    <div class="u-name">${d.u}</div>
+                    <div class="u-rank" style="color:${d.rankColor}">${d.rank}</div>
+                    <div style="margin:5px 0;">${d.m}</div>
+                    ${replyHtml}
+                    <button class="btn btn-sm btn-outline" onclick="setReply('${d.u}: ${d.m}')">Yanıtla</button>
+                </div>` + l.innerHTML;
+            });
+        });
+
+        db.ref('users').on('value', s => {
+            const admL = document.getElementById('adm-u-list'); admL.innerHTML = "";
+            s.forEach(u => {
+                const ud = u.val();
+                admL.innerHTML += `<div style="font-size:12px; border-bottom:1px solid #eee; padding:5px;">
+                    <b>${ud.name}</b> (${ud.rank}) 
+                    <button class="btn btn-sm" onclick="giveRank('${ud.name}')">Yetki/Yıldız</button>
+                    <button class="btn btn-sm btn-danger" onclick="banUser('${ud.name}')">Banla</button>
+                </div>`;
+            });
+        });
+    }
+
+    function setReply(txt) { replyTo = txt; document.getElementById('f-in').placeholder = "Yanıtlanıyor: " + txt; document.getElementById('f-in').focus(); }
+
+    function sendF() {
+        const m = document.getElementById('f-in').value;
+        if(!m) return;
+        db.ref('forum').push({ u:me.name, m:m, rank:me.rank, rankColor:me.rankColor, stars:me.stars, reply:replyTo });
+        document.getElementById('f-in').value = ""; replyTo = null; document.getElementById('f-in').placeholder = "Okula yaz...";
+    }
+
+    function changeTheme(t) { document.body.className = t; }
+
+    function updateAcc() {
+        const m = document.getElementById('s-mail').value;
+        const p = document.getElementById('s-pass').value;
+        db.ref('users/'+me.name).update({ email:m, pass: p || me.pass });
+        alert("Güncellendi!");
+    }
+
+    // ADMIN ÖZELLİKLERİ
+    function checkAdmin() {
+        if(prompt("ADM 1")==="kodcplusadminguiaccess" && prompt("ADM 2")==="kodckunefeaccountadminaccess") document.getElementById('gui-adm').classList.add('active');
+    }
+
+    function banUser(name) {
+        const min = prompt("Kaç dakika banlansın?");
+        if(!min) return;
+        const until = Date.now() + (parseInt(min) * 60000);
+        db.ref('users/'+name).update({ banUntil: until });
+        alert(name + " banlandı.");
+    }
+
+    function giveRank(name) {
+        const r = prompt("Yeni Unvan?");
+        const c = prompt("Unvan Rengi (Hex kodu örn: #ff0000)?");
+        const s = prompt("Yıldız Sayısı?");
+        db.ref('users/'+name).update({ rank:r, rankColor:c, stars:parseInt(s) });
+    }
+
+    function nuke() {
+        if(prompt("YIL 1")==="kodcyeniyıl1" && prompt("YIL 2")==="kodcyeniyıl2" && prompt("YIL 3")==="kodcyeniyıl3") {
+            db.ref('forum').remove(); db.ref('homework').remove(); alert("Nükleer başarılı!");
+        }
+    }
+</script>
+</body>
+</html>
