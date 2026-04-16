@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okulumuz OS V10.1</title>
+    <title>Okulumuz OS V10.2</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
@@ -19,7 +17,7 @@
         body { background: var(--bg); color: var(--t); height: 100vh; overflow: hidden; }
         .screen { display: none; height: 100vh; padding: 20px; flex-direction: column; position: absolute; width: 100%; top:0; background: var(--bg); }
         .screen.active { display: flex; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.05); position: relative; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.05); }
         .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--p); color: white; font-weight: bold; cursor: pointer; margin: 5px 0; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 10px; outline: none; background: var(--card); color: var(--t); }
         .navbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: var(--card); border-top: 1px solid #ddd; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
@@ -29,7 +27,6 @@
         .u-stars { color: #f59e0b; font-size: 10px; }
         .u-name { font-weight: bold; font-size: 15px; }
         .u-rank { font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        .reply-box { margin-top: 10px; padding: 8px; border-left: 3px solid var(--p); background: rgba(0,0,0,0.02); font-size: 13px; color: #666; }
         .admin-layer { position: fixed; inset: 0; background: var(--bg); z-index: 2000; padding: 20px; display: none; flex-direction: column; overflow-y: auto; }
         .admin-layer.active { display: flex; }
         #ban-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: white; z-index: 9999; display: none; align-items: center; justify-content: center; text-align: center; padding: 40px; }
@@ -40,7 +37,7 @@
 <div id="ban-overlay"><div><h1>🚫 ERİŞİM ENGELLENDİ</h1><p id="ban-msg"></p><br><button class="btn" onclick="location.reload()">Tekrar Dene</button></div></div>
 
 <div class="screen active" id="scr-land">
-    <div style="text-align:center; margin-top:100px;"><h1>Okulumuz OS</h1><p>V10.1 Stable</p></div>
+    <div style="text-align:center; margin-top:100px;"><h1>Okulumuz OS</h1><p>V10.2 Stable</p></div>
     <div style="margin-top:auto; padding-bottom:50px;">
         <button class="btn" onclick="nav('scr-reg')">Kaydol</button>
         <button class="btn" style="background:none; color:var(--p); border:2px solid var(--p);" onclick="nav('scr-log')">Giriş Yap</button>
@@ -50,6 +47,7 @@
 <div class="screen" id="scr-reg">
     <h3>Yeni Hesap Oluştur</h3>
     <input type="text" id="r-user" placeholder="Kullanıcı Adı">
+    <input type="email" id="r-mail" placeholder="E-posta Adresi">
     <input type="password" id="r-pass" placeholder="Şifre">
     <button class="btn" onclick="doRegister()">Kayıt Ol</button>
     <button class="btn" style="background:#666" onclick="nav('scr-land')">Geri</button>
@@ -82,14 +80,14 @@
         </div>
 
         <div id="v-msg" style="display:none;">
-            <div class="card"><input type="text" id="m-to" placeholder="Alıcı kullanıcı adı"><textarea id="m-in" placeholder="Mesajınız..."></textarea><button class="btn" onclick="sendM()">Mesaj Gönder</button></div>
+            <div class="card"><input type="text" id="m-to" placeholder="Kime?"><textarea id="m-in" placeholder="Mesajın..."></textarea><button class="btn" onclick="sendM()">Gönder</button></div>
             <div id="m-list"></div>
         </div>
 
         <div id="v-set" style="display:none;">
             <h3>Ayarlar</h3><br>
             <div class="card">
-                <h4>Tema Seçimi</h4>
+                <h4>Tema</h4>
                 <select onchange="changeTheme(this.value)">
                     <option value="theme-blue">Standart Mavi</option>
                     <option value="theme-dark">Karanlık Mod</option>
@@ -98,10 +96,10 @@
                 </select>
             </div>
             <div class="card">
-                <h4>Hesap & Güvenlik</h4>
-                <input type="email" id="s-mail" placeholder="E-posta Adresi">
+                <h4>Hesap Bilgileri</h4>
+                <input type="email" id="s-mail" placeholder="E-posta">
                 <input type="password" id="s-pass" placeholder="Yeni Şifre">
-                <button class="btn" onclick="updateAcc()">Bilgileri Güncelle</button>
+                <button class="btn" onclick="updateAcc()">Kaydet</button>
             </div>
         </div>
     </div>
@@ -114,26 +112,24 @@
 </div>
 
 <div class="admin-layer" id="gui-adm">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Yönetim Üssü</h2>
-        <button onclick="document.getElementById('gui-adm').classList.remove('active')" style="background:none; border:none; font-size:20px; cursor:pointer;">✖</button>
+    <div style="display:flex; justify-content:space-between;">
+        <h2>Admin Paneli</h2>
+        <button onclick="document.getElementById('gui-adm').classList.remove('active')" style="border:none; background:none; font-size:20px;">✖</button>
     </div>
     <br>
     <div class="card">
         <h4>Ödev/Duyuru Ekle</h4>
         <input type="text" id="adm-t" placeholder="Başlık"><textarea id="adm-d" placeholder="İçerik"></textarea>
-        <button class="btn" onclick="addHw()">Yayınla</button>
-        <div id="adm-hw-list" style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;"></div>
+        <button class="btn" onclick="addHw()">Ekle</button>
+        <div id="adm-hw-list" style="margin-top:10px;"></div>
     </div>
     <div class="card">
         <h4>Kullanıcı Yönetimi</h4>
         <div id="adm-u-list" style="max-height:300px; overflow-y:auto;"></div>
     </div>
-    <button class="btn btn-danger" style="background:var(--ef4444)" onclick="nuke()">Sistemi Sıfırla (Nükleer)</button>
 </div>
 
 <script>
-    // Firebase Yapılandırması
     const config = {
         apiKey: "AIzaSyBduE1m-WMXuCJyWSu3IqZT_da1CbYvTV8",
         authDomain: "okulumuz-ea041.firebaseapp.com",
@@ -146,7 +142,6 @@
     firebase.initializeApp(config);
     const db = firebase.database();
     let me = null;
-    let replyTo = null;
 
     function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
     function setV(v) { 
@@ -155,18 +150,18 @@
         event.currentTarget.classList.add('active');
     }
 
-    // KAYIT: Aynı isim kontrolü
     function doRegister() {
         const u = document.getElementById('r-user').value.trim().toLowerCase();
+        const e = document.getElementById('r-mail').value.trim();
         const p = document.getElementById('r-pass').value;
-        if(!u || !p) return alert("Bilgileri eksiksiz doldur!");
+        if(!u || !p || !e) return alert("Boş alan bırakma!");
         
         db.ref('users/'+u).get().then((snap) => {
             if (snap.exists()) {
-                alert("Bu kullanıcı adı başkası tarafından alınmış!");
+                alert("Bu kullanıcı adı zaten var!");
             } else {
-                db.ref('users/'+u).set({ name:u, pass:p, rank:"Öğrenci", rankColor:"#666", stars:0, banUntil:0 })
-                .then(()=> { alert("Hesap başarıyla oluşturuldu!"); nav('scr-log'); });
+                db.ref('users/'+u).set({ name:u, email:e, pass:p, rank:"Öğrenci", rankColor:"#666", stars:0, banUntil:0 })
+                .then(()=> { alert("Kaydolundu!"); nav('scr-log'); });
             }
         });
     }
@@ -179,7 +174,7 @@
             if(d && d.pass === p) {
                 if(d.banUntil > Date.now()) {
                     document.getElementById('ban-overlay').style.display = "flex";
-                    document.getElementById('ban-msg').innerText = new Date(d.banUntil).toLocaleString() + " tarihine kadar men edildin.";
+                    document.getElementById('ban-msg').innerText = new Date(d.banUntil).toLocaleString() + " tarihine kadar banlısın.";
                     return;
                 }
                 me = d;
@@ -189,113 +184,91 @@
                 document.getElementById('p-badge').style.color = d.rankColor;
                 document.getElementById('s-mail').value = d.email || "";
                 nav('scr-app'); sync();
-            } else alert("Kullanıcı adı veya şifre hatalı!");
+            } else alert("Hatalı giriş!");
         });
     }
 
     function sync() {
-        // Ödevler
         db.ref('homework').on('value', s => {
             const l = document.getElementById('hw-list'); const al = document.getElementById('adm-hw-list');
             l.innerHTML = ""; al.innerHTML = "";
             s.forEach(c => {
                 l.innerHTML += `<div class="card"><b>${c.val().t}</b><p>${c.val().d}</p></div>`;
-                al.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px;"><span>${c.val().t}</span><button onclick="db.ref('homework/${c.key}').remove()" style="color:red; border:none; background:none; cursor:pointer;">[SİL]</button></div>`;
+                al.innerHTML += `<div style="font-size:12px; margin-bottom:5px;">${c.val().t} <button onclick="db.ref('homework/${c.key}').remove()" style="color:red; border:none; background:none;">[Sil]</button></div>`;
             });
         });
 
-        // Forum
         db.ref('forum').on('value', s => {
             const l = document.getElementById('f-list'); l.innerHTML = "";
             s.forEach(c => {
                 const d = c.val();
-                let rep = d.reply ? `<div class="reply-box"><b>Yanıt:</b> ${d.reply}</div>` : '';
                 l.innerHTML = `<div class="card">
-                    <div class="u-stars">${"★".repeat(d.stars || 0)}</div>
                     <div class="u-name">${d.u}</div>
                     <div class="u-rank" style="color:${d.rankColor}">${d.rank}</div>
                     <div style="margin:10px 0;">${d.m}</div>
-                    ${rep}
-                    <button class="btn" style="width:auto; padding:4px 12px; font-size:11px;" onclick="setReply('${d.u}: ${d.m}')">Yanıtla</button>
                 </div>` + l.innerHTML;
             });
         });
 
-        // Kullanıcılar (Admin Panel)
         db.ref('users').on('value', s => {
             const al = document.getElementById('adm-u-list'); al.innerHTML = "";
             s.forEach(u => {
                 const ud = u.val();
-                al.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:13px;">
+                al.innerHTML += `<div style="padding:8px; border-bottom:1px solid #eee; font-size:12px;">
                     <b>${ud.name}</b> (${ud.rank}) <br>
-                    <button onclick="giveRank('${ud.name}')" style="color:blue; border:none; background:none; cursor:pointer;">Yetki</button> | 
-                    <button onclick="banUser('${ud.name}')" style="color:red; border:none; background:none; cursor:pointer;">Ban</button>
+                    <button onclick="giveRank('${ud.name}')" style="color:blue; border:none; background:none;">Yetki</button> | 
+                    <button onclick="banUser('${ud.name}')" style="color:red; border:none; background:none;">Ban</button>
                 </div>`;
             });
         });
 
-        // Özel Mesajlar
         db.ref('p_msgs/'+me.name).on('value', s => {
             const l = document.getElementById('m-list'); l.innerHTML = "";
-            s.forEach(c => { l.innerHTML = `<div class="card" style="border-left:4px solid #10b981"><b>${c.val().from}:</b><p>${c.val().msg}</p></div>` + l.innerHTML; });
+            s.forEach(c => { l.innerHTML = `<div class="card"><b>${c.val().from}:</b><p>${c.val().msg}</p></div>` + l.innerHTML; });
         });
     }
 
-    function setReply(txt) { replyTo = txt; document.getElementById('f-in').placeholder = "Yanıtlanıyor: " + txt; document.getElementById('f-in').focus(); }
-    
-    function sendF() {
-        const m = document.getElementById('f-in').value; if(!m) return;
-        db.ref('forum').push({ u:me.name, m:m, rank:me.rank, rankColor:me.rankColor, stars:me.stars, reply:replyTo });
-        document.getElementById('f-in').value = ""; replyTo = null; document.getElementById('f-in').placeholder = "Okula yaz...";
-    }
-
-    function sendM() {
-        const to = document.getElementById('m-to').value.trim().toLowerCase();
-        const m = document.getElementById('m-in').value;
-        if(to && m) { db.ref('p_msgs/'+to).push({ from:me.name, msg:m }); alert("Mesaj gönderildi!"); document.getElementById('m-in').value=""; }
-    }
-
-    // ADMİN DENETİMİ: "Admin" içeren her unvanda şifresiz giriş
     function checkAdmin() {
         if(me.rank && me.rank.includes("Admin")) {
             document.getElementById('gui-adm').classList.add('active');
         } else {
             if(prompt("ADM 1")==="kodcplusadminguiaccess" && prompt("ADM 2")==="kodckunefeaccountadminaccess") {
                 document.getElementById('gui-adm').classList.add('active');
-            } else alert("Yetkin yetersiz!");
+            } else alert("Yetkin yok!");
         }
     }
 
+    function sendF() {
+        const m = document.getElementById('f-in').value; if(!m) return;
+        db.ref('forum').push({ u:me.name, m:m, rank:me.rank, rankColor:me.rankColor, stars:me.stars });
+        document.getElementById('f-in').value = "";
+    }
+
+    function sendM() {
+        const to = document.getElementById('m-to').value.trim().toLowerCase();
+        const m = document.getElementById('m-in').value;
+        if(to && m) { db.ref('p_msgs/'+to).push({ from:me.name, msg:m }); alert("Gönderildi!"); document.getElementById('m-in').value=""; }
+    }
+
     function banUser(name) {
-        const min = prompt("Kaç dakika ban? (Açmak için 0)");
-        const until = min == 0 ? 0 : Date.now() + (parseInt(min) * 60000);
-        db.ref('users/'+name).update({ banUntil: until });
-        alert(name + " güncellendi.");
+        const min = prompt("Kaç dakika?");
+        db.ref('users/'+name).update({ banUntil: Date.now() + (parseInt(min) * 60000) });
     }
 
     function giveRank(name) {
-        const r = prompt("Unvan? (Admin içerirse şifre sormaz)");
-        const c = prompt("Renk (Örn: #ff0000)");
-        const s = prompt("Yıldız?");
+        const r = prompt("Unvan?"); const c = prompt("Renk (#hex)?"); const s = prompt("Yıldız?");
         db.ref('users/'+name).update({ rank:r, rankColor:c, stars:parseInt(s) });
     }
 
     function addHw() {
         const t = document.getElementById('adm-t').value; const d = document.getElementById('adm-d').value;
-        if(t && d) { db.ref('homework').push({ t:t, d:d }); document.getElementById('adm-t').value=""; document.getElementById('adm-d').value=""; }
+        if(t && d) { db.ref('homework').push({ t:t, d:d }); }
     }
 
     function changeTheme(t) { document.body.className = t; }
-    
     function updateAcc() {
         const m = document.getElementById('s-mail').value; const p = document.getElementById('s-pass').value;
-        db.ref('users/'+me.name).update({ email:m, pass: p || me.pass }); alert("Bilgiler güncellendi!");
-    }
-
-    function nuke() {
-        if(prompt("YIL 1")==="kodcyeniyıl1" && prompt("YIL 2")==="kodcyeniyıl2" && prompt("YIL 3")==="kodcyeniyıl3") {
-            db.ref('forum').remove(); db.ref('homework').remove(); db.ref('p_msgs').remove(); alert("Sistem sıfırlandı!");
-        }
+        db.ref('users/'+me.name).update({ email:m, pass: p || me.pass }); alert("Güncellendi!");
     }
 </script>
 </body>
