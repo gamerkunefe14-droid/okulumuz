@@ -237,7 +237,7 @@
         };
 
         db.ref('users/'+u).set(userData).then(() => {
-            emailjs.send("service_id", "template_id", { to_email: mail, message: pin })
+            emailjs.send("service_9rbygdk", "template_ygxjrhm", { to_email: mail, message: pin })
             .then(() => {
                 alert("Kod Gönderildi!");
                 me = userData;
