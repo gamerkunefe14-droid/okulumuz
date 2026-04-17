@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okulumuz OS V11.1 - EmailJS Full</title>
+    <title>Okulumuz OS V11.3 - Tam Donanımlı</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -17,48 +17,64 @@
         .screen.active { display: flex; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; position: relative; }
         .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--p); color: white; font-weight: bold; cursor: pointer; margin: 5px 0; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 10px; background: var(--card); color: var(--t); outline: none; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 10px; background: var(--card); color: var(--t); outline: none; }
+        
         .navbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: var(--card); border-top: 1px solid #ddd; display: flex; z-index: 100; }
         .nav-item { flex: 1; text-align: center; opacity: 0.5; cursor: pointer; font-size: 11px; padding-top: 20px; }
         .nav-item.active { opacity: 1; color: var(--p); font-weight: bold; }
         .scroll { flex: 1; overflow-y: auto; padding-bottom: 80px; max-width: 500px; margin: 0 auto; width: 100%; }
-        .p-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--p); }
+        
+        /* Kullanıcı Listesi ve Profil */
+        .user-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--card); border-radius: 10px; margin-bottom: 8px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); }
+        .user-item img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
+        .p-frame { position: relative; width: 85px; height: 85px; margin: 0 auto 10px; }
+        .p-img { width: 85px; height: 85px; border-radius: 50%; object-fit: cover; border: 3px solid var(--p); }
+        .admin-star { position: absolute; top: -5px; right: -5px; font-size: 20px; display: none; }
+        
+        /* Detay Paneli */
+        #gui-user { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; align-items: center; padding: 20px; }
     </style>
 </head>
 <body class="theme-blue">
 
 <div class="screen" id="scr-lock">
     <div style="text-align:center; margin-top:50px;">
-        <div style="font-size:50px;">📧</div>
-        <h2>E-Posta Onayı</h2>
-        <p id="lock-status" style="padding:15px; font-size:14px;">Uygulamaya devam etmek için kod almalısın.</p>
-        
-        <div id="step-email">
-            <input type="email" id="l-email" placeholder="Okul E-postanı Yaz">
-            <button class="btn" id="send-btn" onclick="sendMailWithPin()">Kodu Mail Gönder</button>
+        <div style="font-size:50px;">🛡️</div>
+        <h2>Güvenlik Onayı</h2>
+        <div id="lock-step-1">
+            <input type="email" id="l-email" placeholder="E-postanı Yaz">
+            <button class="btn" id="send-btn" onclick="sendMailWithPin()">Kod Gönder</button>
         </div>
-
-        <div id="step-pin" style="display:none;">
-            <input type="text" id="p-code" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:8px;" placeholder="0000">
-            <button class="btn" onclick="verifyPin()">Kodu Doğrula</button>
-            <p onclick="location.reload()" style="cursor:pointer; margin-top:10px; font-size:12px; opacity:0.6;">Maili Yanlış mı Yazdın?</p>
+        <div id="lock-step-2" style="display:none;">
+            <input type="text" id="p-code" maxlength="4" style="text-align:center; font-size:28px; letter-spacing:10px;" placeholder="0000">
+            <button class="btn" onclick="verifyPin()">Onayla</button>
         </div>
     </div>
+</div>
+
+<div id="gui-user">
+    <div style="width:100%; text-align:right;"><button onclick="closeUserGui()" style="border:none; background:none; font-size:30px;">✖</button></div>
+    <div class="p-frame">
+        <div id="ug-star" class="admin-star">⭐</div>
+        <img id="ug-img" class="p-img" src="">
+    </div>
+    <h2 id="ug-name">---</h2>
+    <p id="ug-rank" style="font-weight:bold; color:var(--p);"></p>
+    <div id="ug-followers" style="margin:10px 0; font-weight:bold;">0 Takipçi</div>
+    <button class="btn" id="ug-follow-btn" onclick="toggleFollow()">Takip Et</button>
+    <button class="btn" style="background:#10b981;" id="ug-msg-btn">Mesaj Gönder</button>
 </div>
 
 <div class="screen active" id="scr-log">
-    <div style="text-align:center; margin-top:80px;"><h1>Okulumuz OS</h1><p>Giriş Yap</p></div>
-    <div style="margin-top:40px;">
-        <input type="text" id="login-u" placeholder="Kullanıcı Adı">
-        <input type="password" id="login-p" placeholder="Şifre">
-        <button class="btn" onclick="doLogin()">Giriş</button>
-        <button class="btn" style="background:none; color:var(--p);" onclick="nav('scr-reg')">Hesap Oluştur</button>
-    </div>
+    <div style="text-align:center; margin-top:80px;"><h1>Okulumuz OS</h1><p>Giriş</p></div>
+    <input type="text" id="login-u" placeholder="Kullanıcı Adı" style="margin-top:40px;">
+    <input type="password" id="login-p" placeholder="Şifre">
+    <button class="btn" onclick="doLogin()">Giriş</button>
+    <button class="btn" style="background:none; color:var(--p);" onclick="nav('scr-reg')">Kayıt Ol</button>
 </div>
 
 <div class="screen" id="scr-reg">
-    <h3>Yeni Kayıt</h3>
+    <h3>Kayıt</h3>
     <input type="text" id="reg-u" placeholder="Kullanıcı Adı">
     <input type="password" id="reg-p" placeholder="Şifre">
     <button class="btn" onclick="doRegister()">Kayıt Ol</button>
@@ -67,24 +83,47 @@
 
 <div class="screen" id="scr-app" style="padding:0;">
     <div class="scroll" style="padding:20px;">
+        
         <div id="v-home">
             <div class="card" style="text-align:center;">
-                <img id="my-img" class="p-img" src="https://via.placeholder.com/150">
-                <h2 id="my-name">---</h2>
-                <p id="my-rank">---</p>
+                <div class="p-frame"><div id="my-star" class="admin-star">⭐</div><img id="my-img" class="p-img" src=""></div>
+                <h2 id="my-name">---</h2><p id="my-rank">---</p>
             </div>
-            <h4>📌 Okul Forumu</h4>
+            <h4>📌 Duyurular</h4><div id="hw-list"></div>
+        </div>
+
+        <div id="v-forum" style="display:none;">
+            <div class="card"><textarea id="f-in" placeholder="Bir şeyler yaz..."></textarea><button class="btn" onclick="sendF()">Paylaş</button></div>
             <div id="forum-list"></div>
         </div>
+
+        <div id="v-users" style="display:none;">
+            <h3>👥 Kişiler</h3>
+            <input type="text" id="u-search" placeholder="Kullanıcı ara..." oninput="searchUsers(this.value)">
+            <div id="user-list"></div>
         </div>
+
+        <div id="v-msg" style="display:none;">
+            <div class="card"><input type="text" id="m-to" placeholder="Kime..."><textarea id="m-in" placeholder="Mesaj..."></textarea><button class="btn" onclick="sendM()">Gönder</button></div>
+            <div id="m-list"></div>
+        </div>
+
+        <div id="v-set" style="display:none;">
+            <div class="card"><h4>Profil Fotoğrafı</h4><input type="file" accept="image/*" onchange="uploadImg(this)"></div>
+            <button class="btn" style="background:#ef4444;" onclick="location.reload()">Çıkış Yap</button>
+        </div>
+    </div>
+    
     <nav class="navbar">
-        <div class="nav-item active" onclick="setV('home')">🏠 Ev</div>
-        <div class="nav-item" onclick="setV('set')">⚙️ Ayarlar</div>
+        <div class="nav-item" onclick="setV('msg')">💬</div>
+        <div class="nav-item" onclick="setV('forum')">🌐</div>
+        <div class="nav-item active" onclick="setV('home')">🏠</div>
+        <div class="nav-item" onclick="setV('users')">👥</div>
+        <div class="nav-item" onclick="setV('set')">⚙️</div>
     </nav>
 </div>
 
 <script>
-    // --- 🔑 AYARLAR (BURAYI DOLDURMAN ŞART!) ---
     const firebaseConfig = {
         apiKey: "AIzaSyBduE1m-WMXuCJyWSu3IqZT_da1CbYvTV8",
         databaseURL: "https://okulumuz-ea041-default-rtdb.europe-west1.firebasedatabase.app",
@@ -92,23 +131,27 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    // EMAILJS ANAHTARLARIN (EmailJS hesabından alıp buraya yapıştır)
-    const EJS_SERVICE = "YOUR_SERVICE_ID"; 
-    const EJS_TEMPLATE = "YOUR_TEMPLATE_ID";
-    const EJS_PUBLIC = "YOUR_PUBLIC_KEY";
-
-    emailjs.init(EJS_PUBLIC);
+    
+    // EmailJS Ayarları (Panelinden alıp doldur kanka)
+    const EJS_S = "service_9rbygdk"; 
+    const EJS_T = "template_ygxjrhm";
+    const EJS_P = "bgyhgWde8icqWQ5gB";
+    emailjs.init(EJS_P);
 
     let me = null;
+    let viewing = null;
 
     function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function setV(v) {
+        ["home","forum","msg","set","users"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
+        document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+        if(event) event.currentTarget.classList.add('active');
+    }
 
-    // GİRİŞ / KAYIT
+    // GİRİŞ/KAYIT
     function doRegister() {
         const u = document.getElementById('reg-u').value.trim().toLowerCase();
         const p = document.getElementById('reg-p').value;
-        if(!u || !p) return alert("Boş bırakma kanka!");
         db.ref('users/'+u).set({ name:u, pass:p, rank:"Öğrenci", verified:false, img:"" }).then(()=>nav('scr-log'));
     }
 
@@ -117,42 +160,22 @@
         const p = document.getElementById('login-p').value;
         db.ref('users/'+u).once('value', s => {
             const d = s.val();
-            if(d && d.pass === p) {
-                me = d;
-                if(me.verified) { nav('scr-app'); sync(); } else nav('scr-lock');
-            } else alert("Hatalı Giriş!");
+            if(d && d.pass === p) { me = d; if(me.verified) { nav('scr-app'); sync(); } else nav('scr-lock'); }
+            else alert("Hatalı!");
         });
     }
 
-    // --- 📧 EMAILJS İLE MAİL GÖNDERME ---
+    // PIN SİSTEMİ
     async function sendMailWithPin() {
         const mail = document.getElementById('l-email').value.trim();
-        if(!mail.includes("@")) return alert("Doğru dürüst mail yaz kanka!");
-        
         const pin = Math.floor(1000 + Math.random() * 9000);
-        const sendBtn = document.getElementById('send-btn');
-        sendBtn.disabled = true;
-        sendBtn.innerText = "Gönderiliyor...";
-
         try {
-            // Veritabanına PIN kaydet
             await db.ref('users/'+me.name).update({ email: mail, temp_pin: pin });
-
-            // EmailJS ile gönder
-            await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
-                to_name: me.name,
-                to_email: mail,
-                message: pin // Şablonunda {{message}} kısmına bu kod gelecek
-            });
-
-            alert("Kod mailine fişeklendi!");
-            document.getElementById('step-email').style.display = "none";
-            document.getElementById('step-pin').style.display = "block";
-        } catch (err) {
-            alert("Hata oluştu kanka: " + JSON.stringify(err));
-            sendBtn.disabled = false;
-            sendBtn.innerText = "Tekrar Dene";
-        }
+            await emailjs.send(EJS_S, EJS_T, { to_name: me.name, to_email: mail, message: pin });
+            alert("Kod gönderildi!");
+            document.getElementById('lock-step-1').style.display="none";
+            document.getElementById('lock-step-2').style.display="block";
+        } catch(e) { alert("Hata: " + e.text); }
     }
 
     function verifyPin() {
@@ -160,18 +183,69 @@
         db.ref('users/'+me.name).once('value', s => {
             if(s.val().temp_pin.toString() === pinIn) {
                 db.ref('users/'+me.name).update({ verified: true });
-                me.verified = true;
-                nav('scr-app');
-                sync();
-            } else alert("Kod yanlış kanka, patladın!");
+                me.verified = true; nav('scr-app'); sync();
+            } else alert("Yanlış!");
         });
     }
 
+    // 👥 KULLANICILAR VE PROFİL
+    function searchUsers(q) {
+        if(!q) { document.getElementById('user-list').innerHTML=""; return; }
+        db.ref('users').once('value', s => {
+            const l = document.getElementById('user-list'); l.innerHTML = "";
+            s.forEach(u => {
+                const d = u.val();
+                if(d.name.includes(q.toLowerCase())) {
+                    l.innerHTML += `<div class="user-item" onclick="openUserGui('${d.name}')"><img src="${d.img || 'https://via.placeholder.com/150'}"><div><b>${d.name}</b><br><small>${d.rank}</small></div></div>`;
+                }
+            });
+        });
+    }
+
+    function openUserGui(name) {
+        db.ref('users/'+name).on('value', s => {
+            viewing = s.val();
+            document.getElementById('ug-name').innerText = viewing.name.toUpperCase();
+            document.getElementById('ug-rank').innerText = viewing.rank;
+            document.getElementById('ug-img').src = viewing.img || 'https://via.placeholder.com/150';
+            db.ref('follows/'+name).on('value', fs => {
+                let count = 0; let adm = false;
+                fs.forEach(f => { count++; if(f.val().isAdmin) adm = true; });
+                document.getElementById('ug-followers').innerText = count + " Takipçi";
+                document.getElementById('ug-star').style.display = adm ? "block" : "none";
+            });
+            document.getElementById('ug-msg-btn').onclick = () => { setV('msg'); document.getElementById('m-to').value = viewing.name; closeUserGui(); };
+            document.getElementById('gui-user').style.display = "flex";
+        });
+    }
+
+    function toggleFollow() {
+        const isAdm = me.rank.includes("Admin");
+        db.ref('follows/'+viewing.name+'/'+me.name).set({ from: me.name, isAdmin: isAdm });
+        alert("Takip edildi!");
+    }
+
+    function closeUserGui() { document.getElementById('gui-user').style.display = "none"; }
+
+    // DİĞERLERİ
     function sync() {
         document.getElementById('my-name').innerText = me.name.toUpperCase();
         document.getElementById('my-rank').innerText = me.rank;
         document.getElementById('my-img').src = me.img || 'https://via.placeholder.com/150';
+        db.ref('forum').on('value', s => {
+            const l = document.getElementById('forum-list'); l.innerHTML = "";
+            s.forEach(c => { l.innerHTML = `<div class="card"><b>${c.val().u}:</b><p>${c.val().m}</p></div>` + l.innerHTML; });
+        });
     }
+
+    function uploadImg(el) {
+        const reader = new FileReader();
+        reader.onload = () => { db.ref('users/'+me.name).update({ img: reader.result }); document.getElementById('my-img').src = reader.result; };
+        reader.readAsDataURL(el.files[0]);
+    }
+
+    function sendF() { const m = document.getElementById('f-in').value; if(m) { db.ref('forum').push({ u:me.name, m:m }); document.getElementById('f-in').value=""; } }
+    function sendM() { const t = document.getElementById('m-to').value; const m = document.getElementById('m-in').value; if(t && m) { db.ref('p_msgs/'+t).push({ from:me.name, msg:m }); alert("Gönderildi!"); } }
 </script>
 </body>
 </html>
