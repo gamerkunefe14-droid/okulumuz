@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okulumuz OS V12.0 - Enterprise</title>
+    <title>Okulumuz OS V12.5</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -14,28 +14,31 @@
         body { background: var(--bg); color: var(--t); height: 100vh; overflow: hidden; }
         .screen { display: none; height: 100vh; padding: 20px; flex-direction: column; position: absolute; width: 100%; top:0; background: var(--bg); z-index: 10; }
         .screen.active { display: flex; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; position: relative; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; }
         .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--p); color: white; font-weight: bold; cursor: pointer; margin: 5px 0; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 10px; background: var(--card); color: var(--t); outline: none; }
+        
+        /* 🖤 SİYAH ADMİN BUTONU */
+        .admin-btn { position: fixed; top: 15px; right: 15px; background: #000; color: #fff; border: none; padding: 8px 15px; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; z-index: 500; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        
         .navbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: var(--card); border-top: 1px solid #ddd; display: flex; z-index: 100; }
         .nav-item { flex: 1; text-align: center; opacity: 0.5; cursor: pointer; font-size: 11px; padding-top: 20px; }
         .nav-item.active { opacity: 1; color: var(--p); font-weight: bold; }
         .scroll { flex: 1; overflow-y: auto; padding-bottom: 80px; max-width: 500px; margin: 0 auto; width: 100%; }
+        .p-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--p); margin-bottom: 5px; }
         .badge { font-size: 10px; padding: 2px 6px; background: var(--p); color: white; border-radius: 4px; margin-left: 5px; }
-        .admin-star { position: absolute; top: -5px; right: -5px; font-size: 20px; display: none; }
-        .p-frame { position: relative; width: 70px; height: 70px; margin: 0 auto 10px; }
-        .p-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--p); }
-        .user-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 8px; margin-bottom: 5px; cursor: pointer; }
     </style>
 </head>
 <body class="theme-blue">
+
+<button id="main-admin-btn" class="admin-btn" onclick="openAdmin()">👑 ADMİN</button>
 
 <div class="screen" id="scr-lock">
     <div style="text-align:center; margin-top:50px;">
         <h2>🔐 Doğrulama</h2>
         <div id="lock-step-1">
             <input type="email" id="l-email" placeholder="E-postanı Yaz">
-            <button class="btn" id="send-btn" onclick="sendMailWithPin()">Kod Gönder</button>
+            <button class="btn" onclick="sendMailWithPin()">Kod Gönder</button>
         </div>
         <div id="lock-step-2" style="display:none;">
             <input type="text" id="p-code" maxlength="4" style="text-align:center; font-size:28px;" placeholder="0000">
@@ -44,99 +47,76 @@
     </div>
 </div>
 
-<div id="gui-user" class="screen" style="z-index:2000; background:rgba(0,0,0,0.9);">
-    <div class="card" style="margin-top:50px; text-align:center;">
-        <button onclick="document.getElementById('gui-user').classList.remove('active')" style="float:right; background:none; border:none; font-size:24px; color:red;">✖</button>
-        <img id="ug-img" class="p-img" src="">
-        <h2 id="ug-name">---</h2>
-        <p id="ug-info">---</p>
-        <button class="btn" id="ug-msg-btn">Mesaj Gönder</button>
-    </div>
-</div>
-
 <div class="screen" id="scr-admin" style="z-index:3000;">
-    <h3>👑 Sahip Paneli</h3>
+    <div class="card" style="background:#000; color:#fff; text-align:center;"><h3>YÖNETİM PANELİ</h3></div>
     <div class="scroll">
         <div class="card">
-            <h4>Okul Ekle</h4>
-            <input type="text" id="adm-sch-name" placeholder="Okul Adı">
-            <button class="btn" onclick="addSchool()">Okulu Kaydet</button>
+            <h4>🏫 Okul Ekle</h4>
+            <input type="text" id="adm-sch-name" placeholder="Yeni Okul Adı">
+            <button class="btn" style="background:#333" onclick="addSchool()">Sisteme Ekle</button>
         </div>
         <div class="card">
-            <h4>Ödev Ekle</h4>
-            <select id="adm-hw-sch"></select>
-            <input type="text" id="adm-hw-sub" placeholder="Şube (Örn: 7-A)">
+            <h4>📚 Ödev Yayınla</h4>
+            <select id="adm-hw-sch" onfocus="loadSchools('adm-hw-sch')"><option value="">Okul Seç</option></select>
+            <input type="text" id="adm-hw-sub" placeholder="Şube (7-A, 8-C vb.)">
             <textarea id="adm-hw-text" placeholder="Ödev detayı..."></textarea>
-            <button class="btn" onclick="addHw()">Ödevi Yayınla</button>
+            <button class="btn" style="background:#333" onclick="addHw()">Yayınla</button>
         </div>
         <div class="card">
-            <h4>Kullanıcı Yönetimi</h4>
-            <input type="text" id="adm-user-name" placeholder="Düzenlenecek Kullanıcı Adı">
-            <select id="adm-user-sch"></select>
-            <input type="text" id="adm-user-sub" placeholder="Yeni Şube">
-            <button class="btn" style="background:orange" onclick="updateUserLevel()">Güncelle</button>
+            <h4>👤 Kullanıcı Yetki/Bilgi</h4>
+            <input type="text" id="adm-target-user" placeholder="Kullanıcı Adı">
+            <select id="adm-user-rank"><option value="Öğrenci">Öğrenci</option><option value="Admin">Admin</option></select>
+            <button class="btn" style="background:#333" onclick="promoteUser()">Güncelle</button>
         </div>
     </div>
     <button class="btn" style="background:#666" onclick="nav('scr-app')">Kapat</button>
 </div>
 
 <div class="screen active" id="scr-log">
-    <div style="text-align:center; margin-top:80px;"><h1>Okulumuz OS</h1></div>
+    <div style="text-align:center; margin-top:80px;"><h1>Okulumuz OS</h1><p>V12.5</p></div>
     <input type="text" id="login-u" placeholder="Kullanıcı Adı" style="margin-top:40px;">
     <input type="password" id="login-p" placeholder="Şifre">
-    <button class="btn" onclick="doLogin()">Giriş</button>
-    <button class="btn" style="background:none; color:var(--p);" onclick="nav('scr-reg'); loadSchools('reg-sch');">Hesap Oluştur</button>
+    <button class="btn" onclick="doLogin()">Giriş Yap</button>
+    <button class="btn" style="background:none; color:var(--p);" onclick="nav('scr-reg'); loadSchools('reg-sch');">Yeni Hesap</button>
 </div>
 
 <div class="screen" id="scr-reg">
     <h3>Kayıt Ol</h3>
     <input type="text" id="reg-u" placeholder="Kullanıcı Adı">
-    <input type="password" id="reg-p" placeholder="Şifre">
+    <input type="password" id="reg-p1" placeholder="Şifre">
+    <input type="password" id="reg-p2" placeholder="Şifre Tekrar">
     <select id="reg-sch"><option value="">Okul Seçiniz</option></select>
-    <input type="text" id="reg-sub" placeholder="Şube (Örn: 7-A)">
-    <button class="btn" onclick="doRegister()">Kayıt Ol</button>
-    <button class="btn" style="background:#666" onclick="nav('scr-log')">Geri</button>
+    <input type="text" id="reg-sub" placeholder="Şube (7-A)">
+    <button class="btn" onclick="doRegister()">Kaydı Tamamla</button>
+    <button class="btn" style="background:#666" onclick="nav('scr-log')">İptal</button>
 </div>
 
 <div class="screen" id="scr-app" style="padding:0;">
     <div class="scroll" style="padding:20px;">
         <div id="v-home">
             <div class="card" style="text-align:center;">
-                <div class="p-frame"><div id="my-star" class="admin-star">⭐</div><img id="my-img" class="p-img" src=""></div>
+                <img id="my-img" class="p-img" src="https://via.placeholder.com/150">
                 <h2 id="my-name">---</h2>
-                <p id="my-loc" style="font-size:12px; opacity:0.7;">---</p>
-                <div onclick="openAdmin()" style="margin-top:10px; font-size:10px; cursor:pointer; opacity:0.1;">ADMIN</div>
+                <p id="my-loc" style="font-size:12px; opacity:0.6;">---</p>
             </div>
-            <h4>📋 Sınıf Ödevleri</h4>
+            <h4>📌 Sınıfına Özel Ödevler</h4>
             <div id="hw-list"></div>
         </div>
 
         <div id="v-forum" style="display:none;">
-            <div class="card"><textarea id="f-in" placeholder="Düşüncelerini paylaş..."></textarea><button class="btn" onclick="sendF()">Paylaş</button></div>
+            <div class="card"><textarea id="f-in" placeholder="Düşüncen nedir?"></textarea><button class="btn" onclick="sendF()">Paylaş</button></div>
             <div id="forum-list"></div>
         </div>
 
         <div id="v-users" style="display:none;">
-            <h3>👥 Tüm Kullanıcılar</h3>
-            <input type="text" placeholder="Ara..." oninput="searchUsers(this.value)">
+            <h3>👥 Tüm Üyeler</h3>
             <div id="user-list"></div>
         </div>
-
-        <div id="v-set" style="display:none;">
-            <div class="card">
-                <h4>Profil Güncelle</h4>
-                <input type="file" accept="image/*" onchange="uploadImg(this)">
-                <select onchange="document.body.className=this.value"><option value="theme-blue">Mavi Tema</option><option value="theme-dark">Karanlık Tema</option></select>
-            </div>
-            <button class="btn" style="background:#ef4444;" onclick="location.reload()">Çıkış Yap</button>
-        </div>
     </div>
-    
     <nav class="navbar">
-        <div class="nav-item" onclick="setV('forum')">🌐 Forum</div>
-        <div class="nav-item active" onclick="setV('home')">🏠 Ev</div>
-        <div class="nav-item" onclick="setV('users')">👥 Kişiler</div>
-        <div class="nav-item" onclick="setV('set')">⚙️ Ayar</div>
+        <div class="nav-item" onclick="setV('forum')">🌐</div>
+        <div class="nav-item active" onclick="setV('home')">🏠</div>
+        <div class="nav-item" onclick="setV('users')">👥</div>
     </nav>
 </div>
 
@@ -149,7 +129,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
-    // EmailJS (Kanka bunları kendin doldurmayı unutma!)
+    // EmailJS (Kendi ID'lerini yapıştır kanka!)
     const EJS_S = "service_id"; const EJS_T = "template_id"; const EJS_P = "public_key";
     emailjs.init(EJS_P);
 
@@ -157,32 +137,46 @@
 
     function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
     function setV(v) {
-        ["home","forum","set","users"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
+        ["home","forum","users"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
         document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
         if(event) event.currentTarget.classList.add('active');
     }
 
-    // OKUL SİSTEMİ
-    function loadSchools(targetId) {
+    // OKUL VE ÖDEV İŞLERİ
+    function loadSchools(id) {
         db.ref('schools').once('value', s => {
-            const el = document.getElementById(targetId); el.innerHTML = '<option value="">Seçiniz</option>';
+            const el = document.getElementById(id); el.innerHTML = '<option value="">Okul Seç</option>';
             s.forEach(o => { el.innerHTML += `<option value="${o.val().name}">${o.val().name}</option>`; });
         });
     }
 
     function addSchool() {
-        const name = document.getElementById('adm-sch-name').value;
-        if(name) db.ref('schools').push({name}).then(()=>alert("Eklendi"));
+        const n = document.getElementById('adm-sch-name').value;
+        if(n) db.ref('schools').push({name: n}).then(()=>alert("Okul Eklendi!"));
     }
 
-    // KAYIT & GİRİŞ
+    function addHw() {
+        const sch = document.getElementById('adm-hw-sch').value;
+        const sub = document.getElementById('adm-hw-sub').value.toUpperCase();
+        const text = document.getElementById('adm-hw-text').value;
+        if(sch && sub && text) {
+            db.ref('homeworks').push({ sch, sub, text });
+            alert("Ödev sınıfa gönderildi!");
+        }
+    }
+
+    // KAYIT (2 ŞİFRELİ)
     function doRegister() {
         const u = document.getElementById('reg-u').value.trim().toLowerCase();
-        const p = document.getElementById('reg-p').value;
+        const p1 = document.getElementById('reg-p1').value;
+        const p2 = document.getElementById('reg-p2').value;
         const sch = document.getElementById('reg-sch').value;
         const sub = document.getElementById('reg-sub').value.toUpperCase();
-        if(!u || !p || !sch) return alert("Hepsini doldur kanka!");
-        db.ref('users/'+u).set({ name:u, pass:p, school:sch, sub, rank:"Öğrenci", verified:false, img:"" }).then(()=>nav('scr-log'));
+
+        if(p1 !== p2) return alert("Şifreler uyuşmuyor kanka!");
+        if(!u || !p1 || !sch) return alert("Boş yer bırakma!");
+
+        db.ref('users/'+u).set({ name:u, pass:p1, school:sch, sub:sub, rank:"Öğrenci", verified:false, img:"" }).then(()=>nav('scr-log'));
     }
 
     function doLogin() {
@@ -190,17 +184,20 @@
         const p = document.getElementById('login-p').value;
         db.ref('users/'+u).once('value', s => {
             const d = s.val();
-            if(d && d.pass === p) { me = d; if(me.verified) { nav('scr-app'); sync(); } else nav('scr-lock'); }
-            else alert("Hatalı!");
+            if(d && d.pass === p) {
+                me = d;
+                document.getElementById('main-admin-btn').style.display = "block"; // Admin butonu girişte çıkar
+                if(me.verified) { nav('scr-app'); sync(); } else nav('scr-lock');
+            } else alert("Hatalı!");
         });
     }
 
-    // PIN & MAİL
+    // PIN
     async function sendMailWithPin() {
         const mail = document.getElementById('l-email').value;
         const pin = Math.floor(1000 + Math.random() * 9000);
         await db.ref('users/'+me.name).update({ email: mail, temp_pin: pin });
-        emailjs.send(EJS_S, EJS_T, { to_email: mail, message: pin }).then(()=>alert("Gönderildi"));
+        emailjs.send(EJS_S, EJS_T, { to_email: mail, message: pin }).then(()=>alert("Kod gönderildi"));
         document.getElementById('lock-step-1').style.display="none";
         document.getElementById('lock-step-2').style.display="block";
     }
@@ -215,50 +212,40 @@
         });
     }
 
-    // ADMİN İŞLEMLERİ
+    // ADMİN PANELİ GİRİŞİ
     function openAdmin() {
-        if(prompt("Yetki?") === "kodcplusadminguiaccess") {
+        if(prompt("Yetki Kodu?") === "kodcplusadminguiaccess") {
             nav('scr-admin');
             loadSchools('adm-hw-sch');
-            loadSchools('adm-user-sch');
         }
     }
 
-    function addHw() {
-        const sch = document.getElementById('adm-hw-sch').value;
-        const sub = document.getElementById('adm-hw-sub').value.toUpperCase();
-        const text = document.getElementById('adm-hw-text').value;
-        db.ref('homeworks').push({ sch, sub, text });
-        alert("Ödev fişeklendi!");
+    function promoteUser() {
+        const t = document.getElementById('adm-target-user').value.toLowerCase();
+        const r = document.getElementById('adm-user-rank').value;
+        db.ref('users/'+t).update({ rank: r });
+        alert(t + " artık " + r + "!");
     }
 
-    function updateUserLevel() {
-        const target = document.getElementById('adm-user-name').value.toLowerCase();
-        const sch = document.getElementById('adm-user-sch').value;
-        const sub = document.getElementById('adm-user-sub').value.toUpperCase();
-        db.ref('users/'+target).update({ school: sch, sub: sub });
-        alert("Kullanıcı güncellendi!");
-    }
-
-    // SYNC & ÖZELLİKLER
+    // SYNC
     function sync() {
         document.getElementById('my-name').innerText = me.name.toUpperCase();
         document.getElementById('my-loc').innerText = me.school + " / " + me.sub;
         document.getElementById('my-img').src = me.img || 'https://via.placeholder.com/150';
         
-        // Ödevleri Filtrele (Sadece benim okulum ve şubem)
+        // Ödev Filtreleme
         db.ref('homeworks').on('value', s => {
             const l = document.getElementById('hw-list'); l.innerHTML = "";
             s.forEach(h => {
                 const d = h.val();
                 if(d.sch === me.school && d.sub === me.sub) {
-                    l.innerHTML += `<div class="card"><b>📚 ${d.sub} Ödevi</b><p>${d.text}</p></div>`;
+                    l.innerHTML += `<div class="card"><b>📘 ${d.sub} Ödevi</b><p>${d.text}</p></div>`;
                 }
             });
-            if(!l.innerHTML) l.innerHTML = "<p>Henüz ödev yok, yaşasın!</p>";
+            if(!l.innerHTML) l.innerHTML = "<p>Sınıfın için ödev yok.</p>";
         });
 
-        // Forumda Unvanlar
+        // Forum & Unvanlar
         db.ref('forum').on('value', s => {
             const l = document.getElementById('forum-list'); l.innerHTML = "";
             s.forEach(c => {
@@ -266,16 +253,13 @@
                 l.innerHTML = `<div class="card"><b>${d.u} <span class="badge">${d.rank}</span></b><p>${d.m}</p></div>` + l.innerHTML;
             });
         });
-    }
 
-    function searchUsers(q) {
+        // Kişiler Listesi
         db.ref('users').once('value', s => {
             const l = document.getElementById('user-list'); l.innerHTML = "";
             s.forEach(u => {
                 const d = u.val();
-                if(d.name.includes(q.toLowerCase())) {
-                    l.innerHTML += `<div class="user-item"><img src="${d.img || 'https://via.placeholder.com/150'}" style="width:30px; border-radius:50%;"> <b>${d.name}</b> (${d.school})</div>`;
-                }
+                l.innerHTML += `<div class="card" style="display:flex; align-items:center; gap:10px;"><img src="${d.img || 'https://via.placeholder.com/150'}" style="width:30px; border-radius:50%;"> <b>${d.name}</b> (${d.school})</div>`;
             });
         });
     }
@@ -283,12 +267,6 @@
     function sendF() {
         const m = document.getElementById('f-in').value;
         if(m) { db.ref('forum').push({ u:me.name, m:m, rank: me.rank }); document.getElementById('f-in').value=""; }
-    }
-
-    function uploadImg(el) {
-        const reader = new FileReader();
-        reader.onload = () => { db.ref('users/'+me.name).update({ img: reader.result }); document.getElementById('my-img').src = reader.result; };
-        reader.readAsDataURL(el.files[0]);
     }
 </script>
 </body>
