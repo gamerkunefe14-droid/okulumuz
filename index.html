@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okulumuz OS V24.6</title>
+    <title>Okulumuz OS V24.7</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -60,6 +60,7 @@
 </div>
 
 <div class="overlay" id="gui-overlay" onclick="closeModals()"></div>
+
 <div id="user-gui" class="modal">
     <h3 id="gui-title">Yönetim</h3>
     <label>Unvan:</label>
@@ -94,13 +95,11 @@
 <div class="screen" id="scr-lock">
     <div style="text-align:center; padding-top:50px;">
         <h2>🔐 Doğrulama</h2>
-        <div id="lock-1">
-            <input type="email" id="l-email" placeholder="E-posta">
-            <button class="btn" onclick="sendPin()">Kod Gönder</button>
-        </div>
-        <div id="lock-2" style="display:none;">
+        <p id="verify-info" style="font-size:12px; margin-bottom:10px;"></p>
+        <div id="lock-2">
             <input type="text" id="p-code" maxlength="4" placeholder="PIN" style="text-align:center;">
             <button class="btn" onclick="verifyPin()">Onayla</button>
+            <button class="btn" style="background:none; color:var(--p);" onclick="nav('scr-log')">Geri Dön</button>
         </div>
     </div>
 </div>
@@ -117,9 +116,11 @@
     <h3>Kayıt</h3>
     <input type="text" id="reg-u" placeholder="Kullanıcı Adı">
     <input type="password" id="reg-p1" placeholder="Şifre">
+    <input type="email" id="reg-mail" placeholder="E-posta (Doğrulama İçin)">
     <select id="reg-sch"></select>
     <input type="text" id="reg-sub" list="sube-listesi" placeholder="Şube">
-    <button class="btn" onclick="doRegister()">Kayıt Ol</button>
+    <button class="btn" onclick="doRegister()">Kayıt Ol ve Kod Gönder</button>
+    <button class="btn" style="background:none; color:var(--p);" onclick="nav('scr-log')">Zaten Hesabım Var</button>
 </div>
 
 <div class="screen" id="scr-app" style="padding:0;">
@@ -183,11 +184,14 @@
 
     let me = null; let selectedU = null; let activeChat = null;
 
+    // Bildirim İzni İsteme
+    if (Notification.permission !== "granted") Notification.requestPermission();
+
     function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
     function setV(v) {
         ["home","forum","msg","users","set"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
         document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        if(event) event.currentTarget.classList.add('active');
     }
     function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(e=>e.style.display="none"); }
 
@@ -199,24 +203,57 @@
             if(d && d.pass === p) {
                 if(d.banUntil && d.banUntil > Date.now()) return alert("Banlısın!");
                 me = d; document.getElementById('adm-gate').style.display="block";
-                if(me.verified) { nav('scr-app'); sync(); } else nav('scr-lock');
+                if(me.verified) { nav('scr-app'); sync(); } 
+                else { 
+                    document.getElementById('verify-info').innerText = me.mail + " adresine kod gönderilmişti.";
+                    nav('scr-lock'); 
+                }
             } else alert("Hata!");
         });
     }
 
-    function doRegister() {
+    async function doRegister() {
         const u = document.getElementById('reg-u').value.trim().toLowerCase();
-        db.ref('users/'+u).set({name:u, pass:document.getElementById('reg-p1').value, school:document.getElementById('reg-sch').value, sub:document.getElementById('reg-sub').value.toUpperCase(), rank:"Öğrenci", rColor:"#2563eb", stars:0, verified:false, img:"", banUntil:0, following: {}}).then(()=>nav('scr-log'));
+        const mail = document.getElementById('reg-mail').value;
+        const pin = Math.floor(1000 + Math.random() * 9000);
+        
+        if(!u || !mail) return alert("Eksik alan!");
+
+        const userData = {
+            name: u, 
+            pass: document.getElementById('reg-p1').value, 
+            mail: mail,
+            school: document.getElementById('reg-sch').value, 
+            sub: document.getElementById('reg-sub').value.toUpperCase(), 
+            rank: "Öğrenci", 
+            rColor: "#2563eb", 
+            stars: 0, 
+            verified: false, 
+            pin: pin,
+            img: "", 
+            banUntil: 0
+        };
+
+        db.ref('users/'+u).set(userData).then(() => {
+            emailjs.send("service_id", "template_id", { to_email: mail, message: pin })
+                .then(() => {
+                    alert("Kayıt başarılı! Doğrulama kodu e-postana gönderildi.");
+                    me = userData;
+                    document.getElementById('verify-info').innerText = mail + " adresine 4 haneli kod gönderildi.";
+                    nav('scr-lock');
+                });
+        });
     }
 
     function sync() {
         document.getElementById('my-name').innerText = me.name.toUpperCase();
         document.getElementById('my-sch-name').innerText = "🏫 " + me.school;
-        let s = ""; for(let i=0; i<me.stars; i++) s += "⭐";
-        document.getElementById('my-rank-area').innerHTML = `<span class="badge" style="background:${me.rColor}">${s} ${me.rank}</span>`;
+        let starStr = ""; for(let i=0; i<me.stars; i++) starStr += "⭐";
+        document.getElementById('my-rank-area').innerHTML = `<span class="badge" style="background:${me.rColor}">${starStr} ${me.rank}</span>`;
         document.getElementById('my-loc').innerText = me.sub;
         document.getElementById('my-img').src = me.img || 'https://via.placeholder.com/150';
 
+        // Forum Takibi
         db.ref('forum').on('value', s => {
             const l = document.getElementById('forum-list'); l.innerHTML = "";
             const isAuth = me.rank.includes("Admin") || me.rank.includes("Moderatör");
@@ -228,22 +265,29 @@
             });
         });
 
+        // Kullanıcı Listesi ve Mesaj Bildirimi
         db.ref('users').on('value', s => {
             const al = document.getElementById('adm-user-list'); const ml = document.getElementById('main-user-list'); const cl = document.getElementById('chats-container');
             al.innerHTML = ""; ml.innerHTML = ""; cl.innerHTML = "";
             s.forEach(u => {
                 const ud = u.val();
                 const isMe = (u.key === me.name);
-                
-                // --- 👑 ADMİN PANELİ (KENDİN DAHİL HERKES) ---
                 al.innerHTML += `<div class="card" onclick="openAdminGui('${u.key}')" style="cursor:pointer; border-left: 5px solid ${isMe ? 'gold':'#ddd'}; background: ${isMe ? '#fffdf0' : 'white'}">👤 ${u.key} ${isMe ? '<b>(SENSİN)</b>' : ''}</div>`;
-                
-                // --- 👥 SOSYAL LİSTELER (KENDİN HARİÇ) ---
                 if(!isMe) {
                     ml.innerHTML += `<div class="card" onclick="openProfile('${u.key}')" style="cursor:pointer;"><b>${u.key}</b> <small>${ud.school}</small></div>`;
                     cl.innerHTML += `<div class="card" onclick="openChat('${u.key}')" style="cursor:pointer;"><b>${u.key}</b></div>`;
                 }
             });
+        });
+
+        // GENEL MESAJ TAKİBİ (BİLDİRİM İÇİN)
+        db.ref('chats').on('child_changed', s => {
+            const lastMsg = Object.values(s.val()).pop();
+            if (lastMsg.from !== me.name && s.key.includes(me.name)) {
+                if (Notification.permission === "granted" && activeChat !== lastMsg.from) {
+                    new Notification("Yeni Mesaj: " + lastMsg.from, { body: lastMsg.msg });
+                }
+            }
         });
 
         db.ref('schools').on('value', s => {
@@ -257,7 +301,6 @@
         });
     }
 
-    // ADMIN GUI
     function openAdminGui(u) {
         selectedU = u;
         db.ref('users/'+u).once('value', s => {
@@ -328,22 +371,19 @@
             b.scrollTop = b.scrollHeight;
         });
     }
-    function closeChat() { document.getElementById('msg-list-view').style.display="block"; document.getElementById('chat-detail-view').style.display="none"; }
+    function closeChat() { activeChat = null; document.getElementById('msg-list-view').style.display="block"; document.getElementById('chat-detail-view').style.display="none"; }
     function sendM() {
         const m = document.getElementById('m-in').value; if(!m) return;
         const cid = [me.name, activeChat].sort().join("_");
         db.ref('chats/'+cid).push({from:me.name, msg:m}); document.getElementById('m-in').value="";
     }
     
-    async function sendPin() {
-        const p = Math.floor(1000 + Math.random() * 9000);
-        await db.ref('users/'+me.name).update({ pin: p });
-        emailjs.send("service_id", "template_id", { to_email: document.getElementById('l-email').value, message: p }).then(()=>alert("Kod Yollandı!"));
-        document.getElementById('lock-1').style.display="none"; document.getElementById('lock-2').style.display="block";
-    }
     function verifyPin() {
         db.ref('users/'+me.name).once('value', s => {
-            if(s.val().pin.toString() === document.getElementById('p-code').value) { db.ref('users/'+me.name).update({ verified: true }); me.verified=true; nav('scr-app'); sync(); }
+            if(s.val().pin.toString() === document.getElementById('p-code').value) { 
+                db.ref('users/'+me.name).update({ verified: true }); 
+                me.verified=true; nav('scr-app'); sync(); 
+            } else alert("Yanlış PIN!");
         });
     }
 </script>
