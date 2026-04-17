@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okulumuz OS V10.6</title>
+    <title>Okulumuz OS V10.7</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -24,13 +24,23 @@
         .nav-item { text-align: center; opacity: 0.5; flex: 1; cursor: pointer; font-size: 11px; }
         .nav-item.active { opacity: 1; color: var(--p); font-weight: bold; }
         .scroll { flex: 1; overflow-y: auto; padding-bottom: 80px; max-width: 500px; margin: 0 auto; width: 100%; }
+
+        /* Profil Stilleri */
+        .p-frame { position: relative; width: 90px; height: 90px; margin: 0 auto 10px; }
+        .p-img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--p); background: #eee; }
+        .admin-star { position: absolute; top: -10px; right: -5px; font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); display: none; }
+        
         .u-stars { color: #f59e0b; font-size: 10px; }
-        .u-name { font-weight: bold; font-size: 15px; }
+        .u-name { font-weight: bold; font-size: 16px; }
         .u-rank { font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        .u-class { font-size: 11px; color: var(--p); font-weight: bold; }
-        .admin-layer { position: fixed; inset: 0; background: var(--bg); z-index: 2000; padding: 20px; display: none; flex-direction: column; overflow-y: auto; }
-        .admin-layer.active { display: flex; }
-        .del-msg { position: absolute; top: 10px; right: 10px; color: #ef4444; cursor: pointer; font-size: 18px; padding: 5px; }
+
+        /* Kullanıcı GUI */
+        .user-gui { position: fixed; inset: 0; background: var(--bg); z-index: 3000; padding: 20px; display: none; flex-direction: column; align-items: center; }
+        .user-gui.active { display: flex; }
+        .user-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; }
+        .user-item img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--p); }
+
+        .del-msg { position: absolute; top: 10px; right: 10px; color: #ef4444; cursor: pointer; font-size: 18px; }
         #ban-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: white; z-index: 9999; display: none; align-items: center; justify-content: center; text-align: center; padding: 40px; }
     </style>
 </head>
@@ -38,72 +48,80 @@
 
 <div id="ban-overlay"><div><h1>🚫 ERİŞİM ENGELLENDİ</h1><p id="ban-msg"></p><br><button class="btn" onclick="location.reload()">Tekrar Dene</button></div></div>
 
-<div class="screen active" id="scr-land">
-    <div style="text-align:center; margin-top:80px;"><h1>Okulumuz OS</h1><p>V10.6 Mod Support</p></div>
-    <div style="margin-top:auto; padding-bottom:50px;">
-        <button class="btn" onclick="nav('scr-reg')">Kaydol</button>
-        <button class="btn" style="background:none; color:var(--p); border:2px solid var(--p);" onclick="nav('scr-log')">Giriş Yap</button>
+<div id="gui-user" class="user-gui">
+    <div style="width:100%; display:flex; justify-content:space-between;"><span></span><button onclick="document.getElementById('gui-user').classList.remove('active')" style="border:none; background:none; font-size:28px;">✖</button></div>
+    <div class="p-frame" style="margin-top:20px;">
+        <div id="ug-admin-star" class="admin-star">⭐</div>
+        <img id="ug-img" class="p-img" src="https://via.placeholder.com/150">
     </div>
+    <h2 id="ug-name">YÜKLENİYOR...</h2>
+    <div id="ug-stars" class="u-stars"></div>
+    <div id="ug-rank" class="u-rank" style="margin-bottom:10px;">---</div>
+    <div id="ug-followers" style="font-weight:bold; color:var(--p); margin-bottom:20px;">0 Takipçi</div>
+    <button class="btn" id="ug-follow-btn" onclick="toggleFollow()">Takip Et</button>
+    <button class="btn" style="background:#10b981;" id="ug-msg-btn">Mesaj Gönder</button>
+</div>
+
+<div class="screen active" id="scr-land">
+    <div style="text-align:center; margin-top:80px;"><h1>Okulumuz OS</h1><p>V10.7 Social Update</p></div>
+    <div style="margin-top:auto; padding-bottom:50px;"><button class="btn" onclick="nav('scr-reg')">Kaydol</button><button class="btn" style="background:none; color:var(--p); border:2px solid var(--p);" onclick="nav('scr-log')">Giriş Yap</button></div>
 </div>
 
 <div class="screen" id="scr-reg">
-    <h3>Yeni Hesap Oluştur</h3>
-    <input type="text" id="r-user" placeholder="Kullanıcı Adı">
-    <input type="email" id="r-mail" placeholder="E-posta">
+    <h3>Kaydol</h3>
+    <input type="text" id="r-user" placeholder="Kullanıcı Adı"><input type="email" id="r-mail" placeholder="E-posta">
     <div style="display:flex; gap:10px;">
         <select id="r-level"><script>for(let i=1;i<=12;i++) document.write(`<option value="${i}">${i}. Sınıf</option>`);</script></select>
         <select id="r-sub"><script>for(let i=65;i<=90;i++) document.write(`<option value="${String.fromCharCode(i)}">${String.fromCharCode(i)}</option>`);</script></select>
     </div>
-    <input type="password" id="r-pass" placeholder="Şifre">
-    <button class="btn" onclick="doRegister()">Kayıt Ol</button>
-    <button class="btn" style="background:#666" onclick="nav('scr-land')">Geri</button>
+    <input type="password" id="r-pass" placeholder="Şifre"><button class="btn" onclick="doRegister()">Kayıt Ol</button><button class="btn" style="background:#666" onclick="nav('scr-land')">Geri</button>
 </div>
 
-<div class="screen" id="scr-log">
-    <h3>Giriş Yap</h3>
-    <input type="text" id="l-user" placeholder="Kullanıcı Adı">
-    <input type="password" id="l-pass" placeholder="Şifre">
-    <button class="btn" onclick="doLogin()">Giriş</button>
-</div>
+<div class="screen" id="scr-log"><h3>Giriş</h3><input type="text" id="l-user" placeholder="Kullanıcı Adı"><input type="password" id="l-pass" placeholder="Şifre"><button class="btn" onclick="doLogin()">Giriş</button></div>
 
 <div class="screen" id="scr-app">
     <div class="scroll">
         <div id="v-home">
             <div class="card" style="text-align:center;">
+                <div class="p-frame">
+                    <div id="my-admin-star" class="admin-star">⭐</div>
+                    <img id="my-p-img" class="p-img" src="https://via.placeholder.com/150">
+                </div>
                 <h2 id="p-name">---</h2>
-                <div id="p-class" class="u-class">---</div>
                 <div id="p-stars" class="u-stars"></div>
-                <div id="p-badge" class="u-rank" style="margin-bottom:10px;">---</div>
-                <div onclick="checkAdmin()" style="height:35px; background:rgba(0,0,0,0.05); border-radius:8px; line-height:35px; font-size:11px; cursor:pointer; font-weight:bold;">🛡️ ADMİN PANELİ</div>
+                <div id="p-badge" class="u-rank">---</div>
+                <div onclick="checkAdmin()" style="margin-top:10px; font-size:11px; cursor:pointer; opacity:0.5;">🛡️ YÖNETİM</div>
             </div>
-            <h4>📌 Güncel Ödevler</h4>
-            <div id="hw-list"></div>
+            <h4>📌 Duyurular</h4><div id="hw-list"></div>
         </div>
-        <div id="v-forum" style="display:none;">
-            <div class="card"><textarea id="f-in" placeholder="Okula bir şeyler yaz..."></textarea><button class="btn" onclick="sendF()">Paylaş</button></div>
-            <div id="f-list"></div>
+
+        <div id="v-users" style="display:none;">
+            <input type="text" id="user-search" placeholder="Kullanıcı ara..." oninput="searchUsers(this.value)">
+            <div id="user-list"></div>
         </div>
-        <div id="v-msg" style="display:none;">
-            <div class="card"><input type="text" id="m-to" placeholder="Kime?"><textarea id="m-in" placeholder="Mesajın..."></textarea><button class="btn" onclick="sendM()">Gönder</button></div>
-            <div id="m-list"></div>
-        </div>
+
+        <div id="v-forum" style="display:none;"><div class="card"><textarea id="f-in" placeholder="Okula bir şeyler yaz..."></textarea><button class="btn" onclick="sendF()">Paylaş</button></div><div id="f-list"></div></div>
+        <div id="v-msg" style="display:none;"><div class="card"><input type="text" id="m-to" placeholder="Alıcı..."><textarea id="m-in" placeholder="Mesajın..."></textarea><button class="btn" onclick="sendM()">Gönder</button></div><div id="m-list"></div></div>
+
         <div id="v-set" style="display:none;">
+            <div class="card"><h4>Profil Resmi Yükle</h4><input type="file" id="p-upload" accept="image/*" onchange="uploadImg()"><p style="font-size:10px; color:#666; margin-top:5px;">Resim seçince otomatik güncellenir.</p></div>
             <div class="card"><h4>Tema</h4><select onchange="changeTheme(this.value)"><option value="theme-blue">Mavi</option><option value="theme-dark">Karanlık</option><option value="theme-green">Yeşil</option><option value="theme-red">Kırmızı</option></select></div>
             <div class="card"><h4>Hesap</h4><input type="email" id="s-mail" placeholder="E-posta"><input type="password" id="s-pass" placeholder="Yeni Şifre"><button class="btn" onclick="updateAcc()">Kaydet</button></div>
         </div>
     </div>
+    
     <nav class="navbar">
         <div class="nav-item" onclick="setV('msg')">💬 Mesaj</div>
         <div class="nav-item" onclick="setV('forum')">🌐 Forum</div>
         <div class="nav-item active" onclick="setV('home')">🏠 Ev</div>
-        <div class="nav-item" onclick="setV('set')">⚙️ Ayarlar</div>
+        <div class="nav-item" onclick="setV('users')">👥 Kişiler</div>
+        <div class="nav-item" onclick="setV('set')">⚙️ Ayar</div>
     </nav>
 </div>
 
 <div class="admin-layer" id="gui-adm">
-    <div style="display:flex; justify-content:space-between;"><h2>Yönetim Paneli</h2><button onclick="document.getElementById('gui-adm').classList.remove('active')" style="border:none; background:none; font-size:24px;">✖</button></div>
-    <div class="card"><h4>Ödevler</h4><input type="text" id="adm-t" placeholder="Başlık"><textarea id="adm-d" placeholder="İçerik"></textarea><button class="btn" onclick="addHw()">Yayınla</button><div id="adm-hw-list"></div></div>
-    <div class="card"><h4>Kullanıcılar</h4><div id="adm-u-list" style="max-height:300px; overflow-y:auto;"></div></div>
+    <div style="display:flex; justify-content:space-between;"><h2>Yönetim</h2><button onclick="document.getElementById('gui-adm').classList.remove('active')" style="border:none; background:none; font-size:24px;">✖</button></div>
+    <div class="card"><h4>Kullanıcılar</h4><div id="adm-u-list"></div></div>
 </div>
 
 <script>
@@ -119,24 +137,24 @@
     firebase.initializeApp(config);
     const db = firebase.database();
     let me = null;
+    let viewingUser = null;
 
     function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-    function setV(v) { 
-        ["home","forum","msg","set"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
+    function setV(v) {
+        ["home","forum","msg","set","users"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
         document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        if(event) event.currentTarget.classList.add('active');
     }
 
     function doRegister() {
         const u = document.getElementById('r-user').value.trim().toLowerCase();
         const e = document.getElementById('r-mail').value.trim();
-        const lvl = document.getElementById('r-level').value;
-        const sub = document.getElementById('r-sub').value;
         const p = document.getElementById('r-pass').value;
-        if(!u || !p || !e) return alert("Hepsini doldur!");
-        db.ref('users/'+u).get().then((snap) => {
-            if (snap.exists()) alert("Bu isim kapılmış!");
-            else db.ref('users/'+u).set({ name:u, email:e, class:lvl+"-"+sub, pass:p, rank:"Öğrenci", rankColor:"#666", stars:0, banUntil:0 }).then(()=> { alert("Başarılı!"); nav('scr-log'); });
+        const cl = document.getElementById('r-level').value + "-" + document.getElementById('r-sub').value;
+        if(!u || !p) return alert("Eksik bilgi!");
+        db.ref('users/'+u).get().then(s => {
+            if(s.exists()) alert("Alınmış!");
+            else db.ref('users/'+u).set({ name:u, email:e, class:cl, pass:p, rank:"Öğrenci", stars:0, rankColor:"#666", img:"" }).then(()=>nav('scr-log'));
         });
     }
 
@@ -146,49 +164,83 @@
         db.ref('users/'+u).on('value', snap => {
             const d = snap.val();
             if(d && d.pass === p) {
-                if(d.banUntil > Date.now()) {
-                    document.getElementById('ban-overlay').style.display = "flex";
-                    document.getElementById('ban-msg').innerText = new Date(d.banUntil).toLocaleString() + " tarihine kadar banlısın.";
-                    return;
-                }
+                if(d.banUntil > Date.now()) return alert("Banlısın!");
                 me = d;
-                document.getElementById('p-name').innerText = u.toUpperCase();
-                document.getElementById('p-class').innerText = d.class || "---";
-                document.getElementById('p-stars').innerText = "★".repeat(d.stars || 0);
-                document.getElementById('p-badge').innerText = d.rank;
-                document.getElementById('p-badge').style.color = d.rankColor;
-                document.getElementById('s-mail').value = d.email || "";
                 nav('scr-app'); sync();
             } else alert("Hata!");
         });
     }
 
-    function sync() {
-        db.ref('homework').on('value', s => {
-            const l = document.getElementById('hw-list'); const al = document.getElementById('adm-hw-list');
-            l.innerHTML = ""; al.innerHTML = "";
-            s.forEach(c => {
-                l.innerHTML += `<div class="card"><b>${c.val().t}</b><p>${c.val().d}</p></div>`;
-                al.innerHTML += `<div style="font-size:12px; margin-bottom:5px;">${c.val().t} <button onclick="db.ref('homework/${c.key}').remove()" style="color:red; background:none; border:none;">[Sil]</button></div>`;
+    function searchUsers(q) {
+        db.ref('users').once('value', s => {
+            const list = document.getElementById('user-list'); list.innerHTML = "";
+            s.forEach(u => {
+                const d = u.val();
+                if(d.name.includes(q.toLowerCase()) && d.name !== me.name) {
+                    list.innerHTML += `<div class="user-item" onclick="openUserGui('${d.name}')"><img src="${d.img || 'https://via.placeholder.com/150'}"><div><b>${d.name}</b><br><small>${d.rank}</small></div></div>`;
+                }
             });
         });
+    }
 
+    function openUserGui(name) {
+        db.ref('users/'+name).on('value', s => {
+            const d = s.val(); viewingUser = d;
+            document.getElementById('ug-name').innerText = d.name.toUpperCase();
+            document.getElementById('ug-img').src = d.img || 'https://via.placeholder.com/150';
+            document.getElementById('ug-rank').innerText = d.rank;
+            document.getElementById('ug-stars').innerText = "★".repeat(d.stars || 0);
+            db.ref('follows/'+name).on('value', fs => {
+                let c = 0; let adm = false;
+                fs.forEach(f => { c++; if(f.val().isAdmin) adm = true; });
+                document.getElementById('ug-followers').innerText = c + " Takipçi";
+                document.getElementById('ug-admin-star').style.display = adm ? "block" : "none";
+            });
+            document.getElementById('ug-msg-btn').onclick = () => { setV('msg'); document.getElementById('m-to').value = d.name; document.getElementById('gui-user').classList.remove('active'); };
+            document.getElementById('gui-user').classList.add('active');
+        });
+    }
+
+    function toggleFollow() {
+        const isAdmin = me.rank && me.rank.includes("Admin");
+        db.ref('follows/'+viewingUser.name+'/'+me.name).set({ from: me.name, isAdmin: isAdmin });
+        alert("Takip Edildi!");
+    }
+
+    function uploadImg() {
+        const file = document.getElementById('p-upload').files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            db.ref('users/'+me.name).update({ img: reader.result });
+            alert("Resim güncellendi!");
+        };
+        if(file) reader.readAsDataURL(file);
+    }
+
+    function sync() {
+        document.getElementById('p-name').innerText = me.name.toUpperCase();
+        document.getElementById('p-badge').innerText = me.rank;
+        document.getElementById('my-p-img').src = me.img || 'https://via.placeholder.com/150';
+        document.getElementById('p-stars').innerText = "★".repeat(me.stars || 0);
+
+        db.ref('follows/'+me.name).on('value', fs => {
+            let adm = false; fs.forEach(f => { if(f.val().isAdmin) adm = true; });
+            document.getElementById('my-admin-star').style.display = adm ? "block" : "none";
+        });
+
+        // Forum, Duyuru ve Mesaj senkronizasyonu (Önceki sürümlerle aynı)
         db.ref('forum').on('value', s => {
             const l = document.getElementById('f-list'); l.innerHTML = "";
-            const canDelete = me.rank && (me.rank.includes("Admin") || me.rank.includes("Moderatör"));
+            const canDel = me.rank && (me.rank.includes("Admin") || me.rank.includes("Moderatör"));
             s.forEach(c => {
-                const d = c.val();
-                let delBtn = canDelete ? `<span class="del-msg" onclick="if(confirm('Mesaj silinsin mi?')) db.ref('forum/${c.key}').remove()">🗑️</span>` : '';
-                l.innerHTML = `<div class="card">${delBtn}<div class="u-name">${d.u} <small style="color:#2563eb;">(${d.class})</small></div><div class="u-rank" style="color:${d.rankColor}">${d.rank}</div><div style="margin:10px 0;">${d.m}</div></div>` + l.innerHTML;
+                const d = c.val(); let del = canDel ? `<span class="del-msg" onclick="db.ref('forum/${c.key}').remove()">🗑️</span>` : '';
+                l.innerHTML = `<div class="card">${del}<b>${d.u}</b> <small>(${d.class})</small><br><small style="color:${d.rankColor}">${d.rank}</small><p>${d.m}</p></div>` + l.innerHTML;
             });
         });
 
-        db.ref('users').on('value', s => {
-            const al = document.getElementById('adm-u-list'); al.innerHTML = "";
-            s.forEach(u => {
-                const ud = u.val();
-                al.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><b>${ud.name}</b> [${ud.class}] <br><button onclick="giveRank('${ud.name}')" style="color:blue; border:none; background:none;">Düzenle</button> | <button onclick="banUser('${ud.name}')" style="color:orange; border:none; background:none;">Ban</button> | <button onclick="delUser('${ud.name}')" style="color:red; border:none; background:none;">SİL</button></div>`;
-            });
+        db.ref('homework').on('value', s => {
+            const l = document.getElementById('hw-list'); l.innerHTML = "";
+            s.forEach(c => { l.innerHTML += `<div class="card"><b>${c.val().t}</b><p>${c.val().d}</p></div>`; });
         });
 
         db.ref('p_msgs/'+me.name).on('value', s => {
@@ -199,22 +251,14 @@
 
     function checkAdmin() {
         if(me.rank && me.rank.includes("Admin")) document.getElementById('gui-adm').classList.add('active');
-        else if(prompt("ADM 1")==="kodcplusadminguiaccess" && prompt("ADM 2")==="kodckunefeaccountadminaccess") document.getElementById('gui-adm').classList.add('active');
-        else alert("Yalnızca Adminler girebilir!");
+        else if(prompt("KOD 1")==="kodcplusadminguiaccess" && prompt("KOD 2")==="kodckunefeaccountadminaccess") document.getElementById('gui-adm').classList.add('active');
+        else alert("Yetki yok!");
     }
 
-    function giveRank(name) {
-        const r = prompt("Unvan?"); const c = prompt("Renk?"); const s = prompt("Yıldız?"); const cl = prompt("Sınıf?");
-        db.ref('users/'+name).update({ rank:r, rankColor:c, stars:parseInt(s), class:cl });
-    }
-
-    function banUser(name) { const m = prompt("Dk?"); db.ref('users/'+name).update({ banUntil: Date.now() + (m * 60000) }); }
-    function delUser(name) { if(confirm("Silinsin mi?")) db.ref('users/'+name).remove(); }
     function sendF() { const m = document.getElementById('f-in').value; if(m) { db.ref('forum').push({ u:me.name, m:m, rank:me.rank, class:me.class, rankColor:me.rankColor }); document.getElementById('f-in').value=""; } }
-    function sendM() { const t = document.getElementById('m-to').value.trim().toLowerCase(); const m = document.getElementById('m-in').value; if(t && m) { db.ref('p_msgs/'+t).push({ from:me.name, msg:m }); alert("Gitti!"); document.getElementById('m-in').value=""; } }
-    function addHw() { const t = document.getElementById('adm-t').value; const d = document.getElementById('adm-d').value; if(t && d) { db.ref('homework').push({ t:t, d:d }); document.getElementById('adm-t').value=""; document.getElementById('adm-d').value=""; } }
+    function sendM() { const t = document.getElementById('m-to').value.trim().toLowerCase(); const m = document.getElementById('m-in').value; if(t && m) { db.ref('p_msgs/'+t).push({ from:me.name, msg:m }); alert("Gönderildi!"); document.getElementById('m-in').value=""; } }
     function changeTheme(t) { document.body.className = t; }
-    function updateAcc() { const m = document.getElementById('s-mail').value; const p = document.getElementById('s-pass').value; db.ref('users/'+me.name).update({ email:m, pass: p || me.pass }); alert("Ok!"); }
+    function updateAcc() { const m = document.getElementById('s-mail').value; const p = document.getElementById('s-pass').value; db.ref('users/'+me.name).update({ email:m, pass: p || me.pass }); alert("Güncellendi!"); }
 </script>
 </body>
 </html>
