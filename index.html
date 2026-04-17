@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okulumuz OS V24.0</title>
+    <title>Okulumuz OS V24.6</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -233,9 +233,13 @@
             al.innerHTML = ""; ml.innerHTML = ""; cl.innerHTML = "";
             s.forEach(u => {
                 const ud = u.val();
-                // ADMIN PANELI (KENDİN DAHİL)
-                al.innerHTML += `<div class="card" onclick="openAdminGui('${u.key}')" style="cursor:pointer; border-left: 5px solid ${u.key === me.name ? 'gold':'#ddd'}">👤 ${u.key} ${u.key===me.name?'(SENSİN)':''}</div>`;
-                if(u.key !== me.name) {
+                const isMe = (u.key === me.name);
+                
+                // --- 👑 ADMİN PANELİ (KENDİN DAHİL HERKES) ---
+                al.innerHTML += `<div class="card" onclick="openAdminGui('${u.key}')" style="cursor:pointer; border-left: 5px solid ${isMe ? 'gold':'#ddd'}; background: ${isMe ? '#fffdf0' : 'white'}">👤 ${u.key} ${isMe ? '<b>(SENSİN)</b>' : ''}</div>`;
+                
+                // --- 👥 SOSYAL LİSTELER (KENDİN HARİÇ) ---
+                if(!isMe) {
                     ml.innerHTML += `<div class="card" onclick="openProfile('${u.key}')" style="cursor:pointer;"><b>${u.key}</b> <small>${ud.school}</small></div>`;
                     cl.innerHTML += `<div class="card" onclick="openChat('${u.key}')" style="cursor:pointer;"><b>${u.key}</b></div>`;
                 }
@@ -244,7 +248,7 @@
 
         db.ref('schools').on('value', s => {
             const sl = document.getElementById('adm-school-list'); sl.innerHTML = "";
-            s.forEach(o => sl.innerHTML += `<div>${o.val().name} <button onclick="delSchool('${o.key}')">Sil</button></div>`);
+            s.forEach(o => sl.innerHTML += `<div style="padding:5px; border-bottom:1px solid #eee;">${o.val().name} <button onclick="delSchool('${o.key}')" style="float:right; border:none; background:none; color:red;">Sil</button></div>`);
         });
 
         db.ref('homeworks').on('value', s => {
@@ -259,7 +263,9 @@
         db.ref('users/'+u).once('value', s => {
             const d = s.val();
             document.getElementById('gui-rank').value = d.rank;
+            document.getElementById('gui-color').value = d.rColor;
             document.getElementById('gui-stars').value = d.stars;
+            document.getElementById('gui-sch').value = d.school;
             document.getElementById('gui-sub').value = d.sub;
             document.getElementById('user-gui').style.display="block"; document.getElementById('gui-overlay').style.display="block";
         });
@@ -300,12 +306,12 @@
         });
     }
 
-    function addSchool() { db.ref('schools').push({name: document.getElementById('adm-new-sch').value}); }
+    function addSchool() { db.ref('schools').push({name: document.getElementById('adm-new-sch').value}); document.getElementById('adm-new-sch').value=""; }
     function delSchool(id) { db.ref('schools/'+id).remove(); }
-    function addHw() { db.ref('homeworks').push({sch: document.getElementById('adm-hw-sch').value, sub: document.getElementById('adm-hw-sub').value, text: document.getElementById('adm-hw-text').value}); }
+    function addHw() { db.ref('homeworks').push({sch: document.getElementById('adm-hw-sch').value, sub: document.getElementById('adm-hw-sub').value, text: document.getElementById('adm-hw-text').value}); alert("Yayınlandı!"); }
     function loadSchools(id) {
         db.ref('schools').once('value', s => {
-            const el = document.getElementById(id); el.innerHTML = '';
+            const el = document.getElementById(id); el.innerHTML = '<option value="">Okul Seç</option>';
             s.forEach(o => el.innerHTML += `<option value="${o.val().name}">${o.val().name}</option>`);
         });
     }
@@ -319,11 +325,12 @@
         db.ref('chats/'+cid).on('value', s => {
             const b = document.getElementById('chat-messages'); b.innerHTML = "";
             s.forEach(m => b.innerHTML += `<div class="chat-bubble ${m.val().from===me.name?'me':'them'}">${m.val().msg}</div>`);
+            b.scrollTop = b.scrollHeight;
         });
     }
     function closeChat() { document.getElementById('msg-list-view').style.display="block"; document.getElementById('chat-detail-view').style.display="none"; }
     function sendM() {
-        const m = document.getElementById('m-in').value;
+        const m = document.getElementById('m-in').value; if(!m) return;
         const cid = [me.name, activeChat].sort().join("_");
         db.ref('chats/'+cid).push({from:me.name, msg:m}); document.getElementById('m-in').value="";
     }
