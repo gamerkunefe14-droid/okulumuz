@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okulumuz OS V24.8</title>
+    <title>Okulumuz OS V24.9</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -58,10 +58,10 @@
         </div>
         <div class="card">
             <h4>🆙 Güncelleme Yayınla</h4>
-            <input type="text" id="adm-up-ver" placeholder="Versiyon (Örn: V2.1)">
-            <input type="text" id="adm-up-url" placeholder="İndirme Linki">
-            <textarea id="adm-up-note" placeholder="Güncelleme Notları"></textarea>
-            <button class="btn" style="background:#059669" onclick="pushUpdate()">Güncellemeyi Dağıt</button>
+            <input type="text" id="adm-up-ver" placeholder="Versiyon">
+            <input type="text" id="adm-up-url" placeholder="Link">
+            <textarea id="adm-up-note" placeholder="Notlar"></textarea>
+            <button class="btn" style="background:#059669" onclick="pushUpdate()">Dağıt</button>
         </div>
         <button class="btn" style="background:#666" onclick="nav('scr-app')">Kapat</button>
     </div>
@@ -83,7 +83,8 @@
     <input type="number" id="gui-ban-h" placeholder="0 = Yok">
     <button class="btn" onclick="saveGui('update')">Kaydet</button>
     <button class="btn" style="background:red" onclick="saveGui('ban')">Ceza Ver</button>
-    <button class="btn" style="background:black" onclick="saveGui('delete')">Sil</button>
+    <button class="btn" style="background:green" onclick="saveGui('unban')">Cezayı Kaldır</button>
+    <button class="btn" style="background:black" onclick="saveGui('delete')">Hesabı Sil</button>
 </div>
 
 <div id="profile-gui" class="modal">
@@ -98,11 +99,10 @@
 
 <div class="screen" id="scr-lock">
     <div style="text-align:center; padding-top:50px;">
-        <h2>🔐 E-Posta Doğrulama</h2>
+        <h2>🔐 Doğrulama</h2>
         <p id="verify-info" style="font-size:12px; margin:10px;"></p>
         <input type="text" id="p-code" maxlength="4" placeholder="PIN" style="text-align:center; font-size:24px;">
         <button class="btn" onclick="verifyPin()">Onayla</button>
-        <button class="btn" style="background:none; color:var(--p);" onclick="location.reload()">Geri Dön</button>
     </div>
 </div>
 
@@ -118,7 +118,7 @@
     <h3>Yeni Kayıt</h3>
     <input type="text" id="reg-u" placeholder="Kullanıcı Adı">
     <input type="password" id="reg-p1" placeholder="Şifre">
-    <input type="email" id="reg-mail" placeholder="E-Posta (Doğrulama İçin)">
+    <input type="email" id="reg-mail" placeholder="E-Posta">
     <select id="reg-sch"></select>
     <input type="text" id="reg-sub" list="sube-listesi" placeholder="Şube">
     <button class="btn" onclick="doRegister()">Kayıt Ol ve Kod Gönder</button>
@@ -162,7 +162,7 @@
             </div>
             <div class="card" id="update-area">
                 <h4>📥 Güncellemeler</h4>
-                <div id="latest-update-info"><small>Güncel sürümdesiniz.</small></div>
+                <div id="latest-update-info"></div>
             </div>
             <button class="btn" style="background:red" onclick="location.reload()">Çıkış</button>
         </div>
@@ -178,12 +178,10 @@
 </div>
 
 <script>
-    // Şubeler Jeneratörü
     const hrf = "ABCDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ";
     let opts = ""; for(let i=1; i<=12; i++) for(let h of hrf) opts += `<option value="${i}-${h}">`;
     document.getElementById('sube-listesi').innerHTML = opts;
 
-    // Firebase Ayarları
     const firebaseConfig = {
         apiKey: "AIzaSyBduE1m-WMXuCJyWSu3IqZT_da1CbYvTV8",
         databaseURL: "https://okulumuz-ea041-default-rtdb.europe-west1.firebasedatabase.app",
@@ -195,10 +193,8 @@
 
     let me = null; let selectedU = null; let activeChat = null;
 
-    // Bildirim İzni
     if (Notification.permission !== "granted") Notification.requestPermission();
 
-    // Navigasyon
     function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
     function setV(v) {
         ["home","forum","msg","users","set"].forEach(x=>document.getElementById('v-'+x).style.display = x===v?'block':'none');
@@ -207,46 +203,34 @@
     }
     function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(e=>e.style.display="none"); }
 
-    // Giriş
     function doLogin() {
         const u = document.getElementById('login-u').value.trim().toLowerCase();
         const p = document.getElementById('login-p').value;
         db.ref('users/'+u).once('value', s => {
             const d = s.val();
             if(d && d.pass === p) {
-                if(d.banUntil && d.banUntil > Date.now()) return alert("Banlısın!");
+                if(d.banUntil && d.banUntil > Date.now()) return alert("Banlısın! Açılış: " + new Date(d.banUntil).toLocaleString());
                 me = d;
                 document.getElementById('adm-gate').style.display="block";
-                if(me.verified) { nav('scr-app'); sync(); } 
-                else { nav('scr-lock'); document.getElementById('verify-info').innerText = me.mail + " adresine kod gitmişti."; }
+                if(me.verified) { nav('scr-app'); sync(); } else nav('scr-lock');
             } else alert("Hata!");
         });
     }
 
-    // Kayıt & E-Posta
     async function doRegister() {
         const u = document.getElementById('reg-u').value.trim().toLowerCase();
         const mail = document.getElementById('reg-mail').value;
         const pin = Math.floor(1000 + Math.random() * 9000);
-        if(!u || !mail) return alert("Eksik bilgi!");
-
         const userData = {
             name: u, pass: document.getElementById('reg-p1').value, mail: mail,
             school: document.getElementById('reg-sch').value, sub: document.getElementById('reg-sub').value.toUpperCase(),
             rank: "Öğrenci", rColor: "#2563eb", stars: 0, verified: false, pin: pin, img: "", banUntil: 0
         };
-
         db.ref('users/'+u).set(userData).then(() => {
-            emailjs.send("service_9rbygdk", "template_ygxjrhm", { to_email: mail, message: pin })
-            .then(() => {
-                alert("Kod Gönderildi!");
-                me = userData;
-                nav('scr-lock');
-            });
+            emailjs.send("service_id", "template_id", { to_email: mail, message: pin }).then(() => { alert("Kod Yollandı!"); me = userData; nav('scr-lock'); });
         });
     }
 
-    // Veri Senkronizasyonu
     function sync() {
         document.getElementById('my-name').innerText = me.name.toUpperCase();
         document.getElementById('my-sch-name').innerText = "🏫 " + me.school;
@@ -254,7 +238,18 @@
         document.getElementById('my-rank-area').innerHTML = `<span class="badge" style="background:${me.rColor}">${st} ${me.rank}</span>`;
         document.getElementById('my-img').src = me.img || 'https://via.placeholder.com/150';
 
-        // Mesaj Bildirimleri
+        db.ref('updates').limitToLast(1).on('value', s => {
+            const upArea = document.getElementById('latest-update-info');
+            s.forEach(u => {
+                const data = u.val();
+                upArea.innerHTML = `<div class="update-banner"><b>${data.ver}</b><br><a href="${data.url}" target="_blank" class="btn">İNDİR</a></div>`;
+                if(Notification.permission === "granted" && localStorage.getItem('last_up') !== u.key) {
+                    new Notification("🚀 Güncelleme!", {body: data.ver});
+                    localStorage.setItem('last_up', u.key);
+                }
+            });
+        });
+
         db.ref('chats').on('child_changed', s => {
             const last = Object.values(s.val()).pop();
             if(last.from !== me.name && s.key.includes(me.name) && activeChat !== last.from) {
@@ -262,26 +257,12 @@
             }
         });
 
-        // Güncelleme Takibi
-        db.ref('updates').limitToLast(1).on('value', s => {
-            const upArea = document.getElementById('latest-update-info');
-            s.forEach(u => {
-                const data = u.val();
-                upArea.innerHTML = `<div class="update-banner"><b>Yeni Sürüm: ${data.ver}</b><br><small>${data.note}</small><br><a href="${data.url}" target="_blank" class="btn" style="display:block; background:#10b981; text-align:center; text-decoration:none;">İNDİR</a></div>`;
-                if(Notification.permission === "granted" && localStorage.getItem('last_up') !== u.key) {
-                    new Notification("🚀 Güncelleme Mevcut!", {body: data.ver + " yayınlandı."});
-                    localStorage.setItem('last_up', u.key);
-                }
-            });
-        });
-
-        // Listeleri Doldur
         db.ref('users').on('value', s => {
             const al = document.getElementById('adm-user-list'); const ml = document.getElementById('main-user-list'); const cl = document.getElementById('chats-container');
             al.innerHTML = ""; ml.innerHTML = ""; cl.innerHTML = "";
             s.forEach(u => {
                 const ud = u.val();
-                al.innerHTML += `<div class="card" onclick="openAdminGui('${u.key}')">👤 ${u.key}</div>`;
+                al.innerHTML += `<div class="card" onclick="openAdminGui('${u.key}')">👤 ${u.key} ${ud.banUntil > Date.now() ? '🚫' : ''}</div>`;
                 if(u.key !== me.name) {
                     ml.innerHTML += `<div class="card" onclick="openProfile('${u.key}')"><b>${u.key}</b></div>`;
                     cl.innerHTML += `<div class="card" onclick="openChat('${u.key}')"><b>${u.key}</b></div>`;
@@ -303,22 +284,23 @@
         });
     }
 
-    // Fonksiyonlar
-    function verifyPin() {
-        db.ref('users/'+me.name).once('value', s => {
-            if(s.val().pin.toString() === document.getElementById('p-code').value) {
-                db.ref('users/'+me.name).update({verified:true});
-                me.verified=true; nav('scr-app'); sync();
-            } else alert("Yanlış PIN");
-        });
+    function saveGui(act) {
+        const ref = db.ref('users/'+selectedU);
+        if(act==='delete') ref.remove();
+        else if(act==='unban') ref.update({banUntil: 0}).then(()=>alert("Ceza Kaldırıldı!"));
+        else if(act==='ban') {
+            const hours = document.getElementById('gui-ban-h').value;
+            ref.update({banUntil: Date.now() + (hours * 3600000)}).then(()=>alert("Ceza Verildi!"));
+        }
+        else ref.update({rank: document.getElementById('gui-rank').value, rColor: document.getElementById('gui-color').value, stars: parseInt(document.getElementById('gui-stars').value), school: document.getElementById('gui-sch').value, sub: document.getElementById('gui-sub').value.toUpperCase()});
+        closeModals();
     }
 
-    function pushUpdate() {
-        db.ref('updates').push({
-            ver: document.getElementById('adm-up-ver').value,
-            url: document.getElementById('adm-up-url').value,
-            note: document.getElementById('adm-up-note').value
-        }).then(()=>alert("Güncelleme Gönderildi!"));
+    function verifyPin() {
+        db.ref('users/'+me.name).once('value', s => {
+            if(s.val().pin.toString() === document.getElementById('p-code').value) { db.ref('users/'+me.name).update({verified:true}); me.verified=true; nav('scr-app'); sync(); }
+            else alert("Hatalı PIN");
+        });
     }
 
     function openChat(u) {
@@ -338,9 +320,21 @@
         db.ref('chats/'+cid).push({from:me.name, msg:m}); document.getElementById('m-in').value="";
     }
 
+    function pushUpdate() { db.ref('updates').push({ver: document.getElementById('adm-up-ver').value, url: document.getElementById('adm-up-url').value, note: document.getElementById('adm-up-note').value}); alert("Yayınlandı!"); }
     function sendF() { db.ref('forum').push({u:me.name, m: document.getElementById('f-in').value, rank: me.rank, c: me.rColor, stars: me.stars}); document.getElementById('f-in').value=""; }
-    function openAdminGui(u) { selectedU = u; document.getElementById('user-gui').style.display="block"; document.getElementById('gui-overlay').style.display="block"; }
-    function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(e=>e.style.display="none"); }
+    function openAdminGui(u) { 
+        selectedU = u; 
+        db.ref('users/'+u).once('value', s => {
+            const d = s.val();
+            document.getElementById('gui-rank').value = d.rank;
+            document.getElementById('gui-color').value = d.rColor;
+            document.getElementById('gui-stars').value = d.stars;
+            document.getElementById('gui-sch').value = d.school;
+            document.getElementById('gui-sub').value = d.sub;
+            document.getElementById('user-gui').style.display="block"; 
+            document.getElementById('gui-overlay').style.display="block"; 
+        });
+    }
     function tryAdmin() { if(me.rank.includes("Admin") || prompt("Kod?")==="kodcplus") nav('scr-admin'); }
     function addSchool() { db.ref('schools').push({name: document.getElementById('adm-new-sch').value}); }
     function loadSchools(id) { db.ref('schools').once('value', s => { let el = document.getElementById(id); el.innerHTML = ""; s.forEach(o => el.innerHTML += `<option value="${o.val().name}">${o.val().name}</option>`); }); }
@@ -349,13 +343,6 @@
         const reader = new FileReader();
         reader.onloadend = function() { db.ref('users/'+me.name).update({ img: reader.result }); me.img = reader.result; sync(); }
         reader.readAsDataURL(file);
-    }
-    function saveGui(act) {
-        const ref = db.ref('users/'+selectedU);
-        if(act==='delete') ref.remove();
-        else if(act==='ban') ref.update({banUntil: Date.now() + (document.getElementById('gui-ban-h').value * 3600000)});
-        else ref.update({rank: document.getElementById('gui-rank').value, rColor: document.getElementById('gui-color').value, stars: parseInt(document.getElementById('gui-stars').value)});
-        closeModals();
     }
     function openProfile(u) {
         db.ref('users/'+u).once('value', s => {
